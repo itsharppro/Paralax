@@ -75,11 +75,9 @@ jobs:
         dotnet-version: '9.x'  
 
     - name: Run publish script for all packages
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       run: |
         chmod +x ./scripts/pack-all.sh
         ./scripts/pack-all.sh
 
-    - name: Upload NuGet package to NuGet.org
-      env:
-        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      run: ./scripts/publish_nuget.sh
