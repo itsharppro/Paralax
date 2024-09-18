@@ -15,7 +15,7 @@ dotnet pack -c release /p:PackageVersion=$PACKAGE_VERSION --no-restore -o ./nupk
 echo "Package created for branch $GITHUB_REF_NAME"
 
 case "$GITHUB_REF_NAME" in
-  "main")
+  "dev")
     echo "Uploading Paralax package to NuGet..."
     PACKAGE_PATH="./nupkg/Paralax.$PACKAGE_VERSION.nupkg"
 
