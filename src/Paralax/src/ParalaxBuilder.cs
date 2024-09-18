@@ -52,7 +52,13 @@ namespace Paralax
         {
             var serviceProvider = _services.BuildServiceProvider();
             _buildActions.ForEach(a => a(serviceProvider));
+
+            // Ensure that IStartupInitializer.InitializeAsync() is called after building the service provider
+            var startupInitializer = serviceProvider.GetRequiredService<IStartupInitializer>();
+            startupInitializer.InitializeAsync().GetAwaiter().GetResult(); 
+
             return serviceProvider;
         }
+
     }
 }
