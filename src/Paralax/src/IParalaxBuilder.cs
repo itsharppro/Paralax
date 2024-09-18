@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using Paralax.Types;
 
-namespace Paralax.Types
+namespace Paralax
 {
     public interface IParalaxBuilder
     {
