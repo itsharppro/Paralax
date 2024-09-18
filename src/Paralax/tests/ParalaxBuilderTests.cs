@@ -83,7 +83,7 @@ namespace Paralax.Tests
         {
             // Arrange
             var services = new ServiceCollection();
-            services.AddSingleton<MockInitializer>(); // Add MockInitializer as a Singleton
+            services.AddSingleton<MockInitializer>();
             var builder = ParalaxBuilder.Create(services);
 
             // Act
@@ -92,12 +92,11 @@ namespace Paralax.Tests
 
             // Assert
             var initializer = serviceProvider.GetRequiredService<MockInitializer>();
-            Assert.True(initializer.Initialized); // Ensure the initializer was executed
+            Assert.True(initializer.Initialized); 
         }
 
     }
 
-    // Mock initializer for testing
     public class MockInitializer : IInitializer
     {
         public bool Initialized { get; private set; }
