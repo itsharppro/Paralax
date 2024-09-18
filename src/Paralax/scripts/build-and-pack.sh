@@ -22,7 +22,7 @@ if [ -f "$PACKAGE_PATH" ]; then
     echo "Signing the NuGet package..."
     dotnet nuget sign "$PACKAGE_PATH" \
       --certificate-path "$CERTIFICATE_PATH" \
-      --timestamper http://timestamp.digicert.com \
+      --timestamper http://timestamp.digicert.com 
   fi
 
   echo "Uploading Paralax package to NuGet..."
