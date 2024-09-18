@@ -78,19 +78,14 @@ jobs:
       run: |
         echo "${{ secrets.CERTIFICATE_BASE64 }}" | base64 --decode > certificate.cer
         echo "${{ secrets.PRIVATE_KEY_BASE64 }}" | base64 --decode > privatekey.pem
-  
+    
     - name: Run publish script for all packages
       env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-          CERTIFICATE_PATH: certificate.cer
-          PRIVATE_KEY_PATH: privatekey.pem
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        CERTIFICATE_PATH: certificate.cer
+        PRIVATE_KEY_PATH: privatekey.pem
+        CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
       run: |
-          chmod +x ./scripts/pack-all.sh
-          ./scripts/pack-all.sh
-  
-    - name: Sign the NuGet package
-      run: |
-        dotnet nuget sign ./nupkg/Paralax.1.0.$GITHUB_RUN_NUMBER.nupkg \
-            --certificate-path certificate.cer \
-            --timestamper http://timestamp.digicert.com \
+        chmod +x ./scripts/pack-all.sh
+        ./scripts/pack-all.sh
 

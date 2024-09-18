@@ -15,14 +15,19 @@ dotnet pack -c release /p:PackageVersion=$PACKAGE_VERSION --no-restore -o ./nupk
 PACKAGE_PATH="./nupkg/Paralax.$PACKAGE_VERSION.nupkg"
 
 if [ -f "$PACKAGE_PATH" ]; then
-  echo "Signing NuGet package..."
-  dotnet nuget sign "$PACKAGE_PATH" \
-    --certificate-path "$CERTIFICATE_PATH" \
-    --timestamper http://timestamp.digicert.com \
-    --certificate-password "$CERTIFICATE_PASSWORD"
-  
+  echo "Checking if the package is already signed..."
+  if dotnet nuget verify "$PACKAGE_PATH" | grep -q 'Package is signed'; then
+    echo "Package is already signed, skipping signing."
+  else
+    echo "Signing the NuGet package..."
+    dotnet nuget sign "$PACKAGE_PATH" \
+      --certificate-path "$CERTIFICATE_PATH" \
+      --timestamper http://timestamp.digicert.com \
+  fi
+
   echo "Uploading Paralax package to NuGet..."
-  dotnet nuget push "$PACKAGE_PATH" -k "$NUGET_API_KEY" -s https://api.nuget.org/v3/index.json
+  dotnet nuget push "$PACKAGE_PATH" -k "$NUGET_API_KEY" \
+    -s https://api.nuget.org/v3/index.json --skip-duplicate
   echo "Package uploaded to NuGet."
 else
   echo "Error: Package $PACKAGE_PATH not found."
