@@ -75,18 +75,18 @@ jobs:
         dotnet-version: '9.x'  
 
     - name: Decode and save certificate
-        run: |
-          echo "${{ secrets.CERTIFICATE_BASE64 }}" | base64 --decode > certificate.cer
-          echo "${{ secrets.PRIVATE_KEY_BASE64 }}" | base64 --decode > privatekey.pem
+      run: |
+        echo "${{ secrets.CERTIFICATE_BASE64 }}" | base64 --decode > certificate.cer
+        echo "${{ secrets.PRIVATE_KEY_BASE64 }}" | base64 --decode > privatekey.pem
   
     - name: Run publish script for all packages
-        env:
-            NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-            CERTIFICATE_PATH: certificate.cer
-            PRIVATE_KEY_PATH: privatekey.pem
-        run: |
-            chmod +x ./scripts/pack-all.sh
-            ./scripts/pack-all.sh
+      env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          CERTIFICATE_PATH: certificate.cer
+          PRIVATE_KEY_PATH: privatekey.pem
+      run: |
+          chmod +x ./scripts/pack-all.sh
+          ./scripts/pack-all.sh
   
     - name: Sign the NuGet package
       run: |
