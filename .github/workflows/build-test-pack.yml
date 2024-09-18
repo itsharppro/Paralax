@@ -1,0 +1,91 @@
+name: .NET CI Build, Test, and Publish
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '9.x'  
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build all projects
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test all projects with coverage
+      run: |
+        for testProject in $(find ./src -type f -name '*.Tests.csproj'); do
+          echo "Running tests for $testProject"
+          dotnet test $testProject --configuration Release --no-build \
+          --collect:"XPlat Code Coverage" \
+          --results-directory TestResults/ \
+          /p:CollectCoverage=true \
+          /p:CoverletOutputFormat=cobertura \
+          --logger "trx;LogFileName=TestResults.trx"
+        done
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: TestResults
+        path: TestResults/
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v3
+      with:
+        name: CoverageReport
+        path: TestResults/**/coverage.cobertura.xml
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: TestResults/**/coverage.cobertura.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: unittests
+        name: code-coverage-report
+        fail_ci_if_error: true
+
+  publish:
+    if: github.ref == 'refs/heads/dev'
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '9.x'  
+
+    - name: Decode and save certificate
+      run: |
+        echo "${{ secrets.CERTIFICATE_BASE64 }}" | base64 --decode > certificate.cer
+        echo "${{ secrets.PRIVATE_KEY_BASE64 }}" | base64 --decode > privatekey.pem
+    
+    - name: Run publish script for all packages
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        CERTIFICATE_PATH: certificate.cer
+        PRIVATE_KEY_PATH: privatekey.pem
+        CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+      run: |
+        chmod +x ./scripts/pack-all.sh
+        ./scripts/pack-all.sh
+

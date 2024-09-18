@@ -1,0 +1,47 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E439566D-B138-4D4C-9EDF-593786349BBB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Paralax", "Paralax", "{9159B09B-9DC8-4D2F-8565-81665C797AA9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paralax", "src\Paralax\src\Paralax.csproj", "{CE1DCE8C-5954-4522-923E-64357F83FDB1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Paralax.Security", "Paralax.Security", "{660B07DF-B847-48FC-B0FC-37F5948AF1B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paralax.Security", "src\Paralax.Security\src\Paralax.Security.csproj", "{3AAF8AEA-0ABE-4CAA-8E79-54E27D122966}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paralax.Tests", "src\Paralax\tests\Paralax.Tests.csproj", "{28B71DF6-5DE5-4C43-AE05-5C69E8F53D20}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE1DCE8C-5954-4522-923E-64357F83FDB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE1DCE8C-5954-4522-923E-64357F83FDB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE1DCE8C-5954-4522-923E-64357F83FDB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE1DCE8C-5954-4522-923E-64357F83FDB1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AAF8AEA-0ABE-4CAA-8E79-54E27D122966}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AAF8AEA-0ABE-4CAA-8E79-54E27D122966}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AAF8AEA-0ABE-4CAA-8E79-54E27D122966}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AAF8AEA-0ABE-4CAA-8E79-54E27D122966}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28B71DF6-5DE5-4C43-AE05-5C69E8F53D20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28B71DF6-5DE5-4C43-AE05-5C69E8F53D20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28B71DF6-5DE5-4C43-AE05-5C69E8F53D20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28B71DF6-5DE5-4C43-AE05-5C69E8F53D20}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9159B09B-9DC8-4D2F-8565-81665C797AA9} = {E439566D-B138-4D4C-9EDF-593786349BBB}
+		{CE1DCE8C-5954-4522-923E-64357F83FDB1} = {9159B09B-9DC8-4D2F-8565-81665C797AA9}
+		{660B07DF-B847-48FC-B0FC-37F5948AF1B7} = {E439566D-B138-4D4C-9EDF-593786349BBB}
+		{3AAF8AEA-0ABE-4CAA-8E79-54E27D122966} = {660B07DF-B847-48FC-B0FC-37F5948AF1B7}
+		{28B71DF6-5DE5-4C43-AE05-5C69E8F53D20} = {9159B09B-9DC8-4D2F-8565-81665C797AA9}
+	EndGlobalSection
+EndGlobal
