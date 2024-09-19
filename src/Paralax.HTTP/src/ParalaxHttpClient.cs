@@ -9,7 +9,7 @@ using Polly;
 
 namespace Paralax.HTTP
 {
-    public class ParalaxHttpClient : IHttpClientBase, IHttpClientWithSerialization, IHttpClientWithResult, IHttpClientAdvanced, IHttpClientHeaders
+    public class ParalaxHttpClient : IHttpClient
     {
         private const string JsonContentType = "application/json";
         private readonly HttpClient _client;
