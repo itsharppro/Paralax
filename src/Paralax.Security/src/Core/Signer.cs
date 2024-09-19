@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
-namespace Paralax.Security.Internals
+namespace Paralax.Security.Core
 {
     internal sealed class Signer : ISigner
     {

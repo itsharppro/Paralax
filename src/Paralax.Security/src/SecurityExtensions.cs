@@ -1,10 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Paralax.Security;
 using Paralax.Security.Core;
-using Paralax.Security.Internals;
-using Paralax.Types;
+using Paralax;
 
-namespace Paralax.Extensions
+namespace Paralax.Security
 {
     public static class SecurityExtensions
     {
