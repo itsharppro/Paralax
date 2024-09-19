@@ -9,8 +9,14 @@
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.3.0" />
-    <PackageReference Include="Paralax" Version="1.0.19" />
+    <PackageReference Include="Paralax" Version="1.0.28" />
     <PackageReference Include="SHA3.Net" Version="1.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Paralax.Security.Tests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>
