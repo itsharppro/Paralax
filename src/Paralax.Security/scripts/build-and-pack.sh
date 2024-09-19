@@ -1,19 +1,22 @@
 #!/bin/bash
 
 echo "Executing post-success scripts for branch $GITHUB_REF_NAME"
-echo "Starting build and NuGet package creation for Paralax framework..."
+echo "Starting build and NuGet package creation for Paralax.Security..."
 
-cd src/Paralax/src
+# Navigate to the Paralax.Security project folder
+cd src/Paralax.Security/src
 
 echo "Restoring NuGet packages..."
 dotnet restore
 
+# Define the package version based on GitHub run number
 PACKAGE_VERSION="1.0.$GITHUB_RUN_NUMBER"
-echo "Building and packing the Paralax library..."
+echo "Building and packing the Paralax.Security library..."
 dotnet pack -c release /p:PackageVersion=$PACKAGE_VERSION --no-restore -o ./nupkg
 
-PACKAGE_PATH="./nupkg/Paralax.$PACKAGE_VERSION.nupkg"
+PACKAGE_PATH="./nupkg/Paralax.Security.$PACKAGE_VERSION.nupkg"
 
+# Check if the NuGet package was created
 if [ -f "$PACKAGE_PATH" ]; then
   echo "Checking if the package is already signed..."
   if dotnet nuget verify "$PACKAGE_PATH" | grep -q 'Package is signed'; then
@@ -22,10 +25,10 @@ if [ -f "$PACKAGE_PATH" ]; then
     echo "Signing the NuGet package..."
     dotnet nuget sign "$PACKAGE_PATH" \
       --certificate-path "$CERTIFICATE_PATH" \
-      --timestamper http://timestamp.digicert.com 
+      --timestamper http://timestamp.digicert.com
   fi
 
-  echo "Uploading Paralax package to NuGet..."
+  echo "Uploading Paralax.Security package to NuGet..."
   dotnet nuget push "$PACKAGE_PATH" -k "$NUGET_API_KEY" \
     -s https://api.nuget.org/v3/index.json --skip-duplicate
   echo "Package uploaded to NuGet."
