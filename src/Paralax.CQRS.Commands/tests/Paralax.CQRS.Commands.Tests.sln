@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paralax.CQRS.Commands.Tests", "Paralax.CQRS.Commands.Tests.csproj", "{374D7302-C8BD-471C-9BE3-4D5C6BB8AF6D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{374D7302-C8BD-471C-9BE3-4D5C6BB8AF6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{374D7302-C8BD-471C-9BE3-4D5C6BB8AF6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{374D7302-C8BD-471C-9BE3-4D5C6BB8AF6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{374D7302-C8BD-471C-9BE3-4D5C6BB8AF6D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F3D762D7-9405-46F3-83F1-82FB190AC9F8}
+	EndGlobalSection
+EndGlobal
