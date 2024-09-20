@@ -32,14 +32,12 @@ namespace Paralax.HTTP
                 throw new ArgumentException("HTTP client name cannot be empty.", nameof(clientName));
             }
 
-            // Fetch HttpClientOptions from configuration
             var options = builder.GetOptions<HttpClientOptions>(sectionName);
             if (maskedRequestUrlParts is not null && options.RequestMasking is not null)
             {
                 options.RequestMasking.UrlParts = maskedRequestUrlParts;
             }
 
-            // Determine if correlation factories need to be registered
             bool registerCorrelationContextFactory;
             bool registerCorrelationIdFactory;
 
@@ -49,7 +47,6 @@ namespace Paralax.HTTP
                 registerCorrelationIdFactory = scope.ServiceProvider.GetService<ICorrelationIdFactory>() is null;
             }
 
-            // Register correlation context and ID factories if necessary
             if (registerCorrelationContextFactory)
             {
                 builder.Services.AddSingleton<ICorrelationContextFactory, EmptyCorrelationContextFactory>();
@@ -60,17 +57,14 @@ namespace Paralax.HTTP
                 builder.Services.AddSingleton<ICorrelationIdFactory, EmptyCorrelationIdFactory>();
             }
 
-            // Register options and serializers
             builder.Services.AddSingleton(options);
             builder.Services.AddSingleton<IHttpClientSerializer, SystemTextJsonHttpClientSerializer>();
 
-            // Register the HTTP client with logging and any additional customizations
             var clientBuilder = builder.Services.AddHttpClient<IHttpClient, ParalaxHttpClient>(clientName);
             httpClientBuilder?.Invoke(clientBuilder);
 
             if (options.RequestMasking?.Enabled == true)
             {
-                // Replace the default HttpMessageHandlerBuilderFilter with the custom ParalaxLoggingHttpMessageScopeHandler
                 builder.Services.Replace(ServiceDescriptor
                     .Singleton<IHttpMessageHandlerBuilderFilter, ParalaxHttpLoggingFilter>());
             }
