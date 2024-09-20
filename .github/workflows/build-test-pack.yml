@@ -9,8 +9,47 @@ on:
       - '**'
 
 jobs:
-  build:
+  # Identify changed libraries job
+  identify_changed_libraries:
     runs-on: ubuntu-latest
+    outputs:
+      libraries: ${{ steps.set-libraries.outputs.libraries }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Identify Changed Libraries
+      id: set-libraries
+      run: |
+        # Get a list of all files that were changed in this commit
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+
+        # Initialize an empty variable to store the names of libraries that were changed
+        LIBRARIES=""
+
+        # Loop through all changed files to identify relevant libraries
+        for file in $CHANGED_FILES; do
+          if [[ "$file" == *"/src/"* && "$file" == *.csproj ]]; then
+            LIBRARY=$(echo "$file" | cut -d'/' -f3)  # Extract the library name
+            if [[ ! "$LIBRARIES" =~ "$LIBRARY" ]]; then
+              LIBRARIES="$LIBRARIES $LIBRARY"
+            fi
+          fi
+        done
+
+        # Output the list of changed libraries
+        echo "LIBRARIES=$LIBRARIES" >> $GITHUB_ENV
+        echo "::set-output name=libraries::$LIBRARIES"
+
+  # Parallel job for building and testing libraries
+  build_test:
+    needs: identify_changed_libraries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        library: ${{ fromJson(needs.identify_changed_libraries.outputs.libraries) }}
+      fail-fast: false
 
     steps:
     - name: Checkout code
@@ -19,72 +58,53 @@ jobs:
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '9.x'  
+        dotnet-version: '9.x'
 
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Identify Changed Libraries
-      id: changed_files
+    - name: Restore dependencies for the library
       run: |
-        # Get a list of all files that were changed in this commit
-        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+        echo "Restoring dependencies for ${{ matrix.library }}"
+        dotnet restore src/${{ matrix.library }}
 
-        # Initialize an empty variable to store the paths to test projects that were changed
-        TEST_PROJECTS=""
-
-        # Loop through all changed files to identify relevant test projects
-        for file in $CHANGED_FILES; do
-          if [[ "$file" == *"/tests/"* && "$file" == *.Tests.csproj ]]; then
-            TEST_PROJECTS="$TEST_PROJECTS $file"
-          elif [[ "$file" == *"/src/"* && -f "${file%/*}/tests/${file%/*}.Tests.csproj" ]]; then
-            TEST_PROJECTS="$TEST_PROJECTS ${file%/*}/tests/${file%/*}.Tests.csproj"
-          fi
-        done
-
-        # Export the test project paths for use in later steps
-        echo "TEST_PROJECTS=$TEST_PROJECTS" >> $GITHUB_ENV
-
-    - name: Run Tests for Changed Projects
-      if: env.TEST_PROJECTS != ''
+    - name: Build the library
       run: |
-        for testProject in $TEST_PROJECTS; do
-          echo "Running tests for $testProject"
-          dotnet test $testProject --configuration Release --no-build \
-          --collect:"XPlat Code Coverage" \
-          --results-directory TestResults/ \
-          /p:CollectCoverage=true \
-          /p:CoverletOutputFormat=cobertura \
-          --logger "trx;LogFileName=TestResults.trx"
-        done
+        echo "Building ${{ matrix.library }}"
+        dotnet build src/${{ matrix.library }} --configuration Release --no-restore
+
+    - name: Test the library
+      run: |
+        echo "Running tests for ${{ matrix.library }}"
+        dotnet test src/${{ matrix.library }}/tests --configuration Release --no-build \
+        --collect:"XPlat Code Coverage" \
+        --results-directory TestResults/ \
+        /p:CollectCoverage=true \
+        /p:CoverletOutputFormat=cobertura \
+        --logger "trx;LogFileName=TestResults.trx"
 
     - name: Upload test results
-      if: env.TEST_PROJECTS != ''
       uses: actions/upload-artifact@v3
       with:
-        name: TestResults
+        name: TestResults-${{ matrix.library }}
         path: TestResults/
 
     - name: Upload coverage report
-      if: env.TEST_PROJECTS != ''
       uses: actions/upload-artifact@v3
       with:
-        name: CoverageReport
+        name: CoverageReport-${{ matrix.library }}
         path: TestResults/**/coverage.cobertura.xml
 
     - name: Upload coverage to Codecov
-      if: env.TEST_PROJECTS != ''
       uses: codecov/codecov-action@v3
       with:
         files: TestResults/**/coverage.cobertura.xml
         token: ${{ secrets.CODECOV_TOKEN }}
         flags: unittests
-        name: code-coverage-report
+        name: code-coverage-report-${{ matrix.library }}
         fail_ci_if_error: true
 
+  # Publish job after builds are successful
   publish:
     if: github.ref == 'refs/heads/main'
-    needs: build
+    needs: build_test
     runs-on: ubuntu-latest
 
     steps:
