@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       libraries: ${{ steps.set-libraries.outputs.libraries }}
-      
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -22,8 +22,14 @@ jobs:
     - name: Identify Changed Libraries
       id: set-libraries
       run: |
-        # Get a list of all files that were changed in this commit
-        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+        # If there's no previous commit (first commit or shallow clone), assume all files are changed
+        if [ -z "${{ github.event.before }}" ]; then
+          echo "No previous commit detected, running for all libraries."
+          CHANGED_FILES=$(git ls-tree -r HEAD --name-only)
+        else
+          # Get the list of changed files between the previous and current commit
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+        fi
 
         # Initialize an empty variable to store the names of libraries that were changed
         LIBRARIES=""
@@ -37,6 +43,12 @@ jobs:
             fi
           fi
         done
+
+        # If no libraries were identified, we assume all libraries might be changed
+        if [ -z "$LIBRARIES" ]; then
+          echo "No changed libraries detected, processing all."
+          LIBRARIES=$(ls src)
+        fi
 
         # Output the list of changed libraries
         echo "LIBRARIES=$LIBRARIES" >> $GITHUB_ENV
