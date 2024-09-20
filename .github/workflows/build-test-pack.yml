@@ -35,27 +35,26 @@ jobs:
         fi
 
         # Initialize an empty variable to store the names of libraries that were changed
-        LIBRARIES=""
+        LIBRARIES=()
 
         # Loop through all changed files to identify relevant libraries
         for file in $CHANGED_FILES; do
           if [[ "$file" == *"/src/"* && "$file" == *.csproj ]]; then
             LIBRARY=$(echo "$file" | cut -d'/' -f3)  # Extract the library name
-            if [[ ! "$LIBRARIES" =~ "$LIBRARY" ]]; then
-              LIBRARIES="$LIBRARIES $LIBRARY"
+            if [[ ! " ${LIBRARIES[@]} " =~ " ${LIBRARY} " ]]; then
+              LIBRARIES+=("$LIBRARY")
             fi
           fi
         done
 
         # If no libraries were identified, we assume all libraries might be changed
-        if [ -z "$LIBRARIES" ]; then
+        if [ ${#LIBRARIES[@]} -eq 0 ]; then
           echo "No changed libraries detected, processing all."
-          LIBRARIES=$(ls src)
+          LIBRARIES=($(ls src))
         fi
 
-        # Output the list of changed libraries
-        echo "LIBRARIES=$LIBRARIES" >> $GITHUB_ENV
-        echo "::set-output name=libraries::$LIBRARIES"
+        # Output the list of changed libraries as a JSON array
+        echo "LIBRARIES=$(echo ${LIBRARIES[@]} | jq -R -s -c 'split(" ")')" >> $GITHUB_ENV
 
   # Parallel job for building and testing libraries
   build_test:
@@ -63,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        library: ${{ fromJson(needs.identify_changed_libraries.outputs.libraries) }}
+        library: ${{ fromJson(env.LIBRARIES) }}
       fail-fast: false
 
     steps:
