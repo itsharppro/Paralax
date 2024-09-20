@@ -30,6 +30,8 @@ jobs:
         ./scripts/identify-changed-libraries.sh
 
     - name: Build and test libraries
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}  # Use the secret token for Codecov
       run: |
         chmod +x ./scripts/build-and-test.sh
         ./scripts/build-and-test.sh
@@ -42,7 +44,7 @@ jobs:
 
   # Publish job after build and tests are successful
   publish:
-    if: github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/main'
     needs: build_test
     runs-on: ubuntu-latest
 
