@@ -27,11 +27,12 @@ for LIBRARY in $LIBRARIES; do
 
       if [ -d "src/$LIBRARY/tests" ]; then
         echo "Running tests for $LIBRARY"
-        dotnet test "src/$LIBRARY/tests" --configuration Release  \
+        dotnet test "src/$LIBRARY/tests" --configuration Release \
           --collect:"XPlat Code Coverage" \
-          --results-directory TestResults/ \
+          --results-directory "src/$LIBRARY/TestResults/" \
           /p:CollectCoverage=true \
           /p:CoverletOutputFormat=cobertura \
+          /p:CoverletOutput="src/$LIBRARY/TestResults/coverage.cobertura.xml" \
           --logger "trx;LogFileName=TestResults.trx"
 
         # Check if the tests succeeded
@@ -40,11 +41,17 @@ for LIBRARY in $LIBRARIES; do
           exit 1
         fi
 
+        # Verify if the coverage file exists
+        COVERAGE_REPORT="src/$LIBRARY/TestResults/coverage.cobertura.xml"
+        if [ -f "$COVERAGE_REPORT" ]; then
+          echo "Uploading coverage report to Codecov for $LIBRARY"
+          bash <(curl -s https://codecov.io/bash) -t "$CODECOV_TOKEN" -f "$COVERAGE_REPORT" -F $LIBRARY
+        else
+          echo "Coverage report not found for $LIBRARY. Expected at $COVERAGE_REPORT"
+        fi
+
         echo "Uploading test results for $LIBRARY"
         mv TestResults/* "src/$LIBRARY/TestResults/"
-
-        echo "Uploading coverage report to Codecov for $LIBRARY"
-        bash <(curl -s https://codecov.io/bash) -t "$CODECOV_TOKEN" -f "src/$LIBRARY/TestResults/coverage.cobertura.xml" -F $LIBRARY
       else
         echo "No test project found for $LIBRARY"
       fi
