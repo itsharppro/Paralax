@@ -3,20 +3,17 @@
 echo "Executing post-success scripts for branch $GITHUB_REF_NAME"
 echo "Starting build and NuGet package creation for Paralax.CQRS.Commands..."
 
-# Navigate to the Paralax.Security project folder
 cd src/Paralax.CQRS.Commands/src
 
 echo "Restoring NuGet packages..."
 dotnet restore
 
-# Define the package version based on GitHub run number
 PACKAGE_VERSION="1.0.$GITHUB_RUN_NUMBER"
 echo "Building and packing the Paralax.CQRS.Commands library..."
 dotnet pack -c release /p:PackageVersion=$PACKAGE_VERSION --no-restore -o ./nupkg
 
 PACKAGE_PATH="./nupkg/Paralax.CQRS.Commands.$PACKAGE_VERSION.nupkg"
 
-# Check if the NuGet package was created
 if [ -f "$PACKAGE_PATH" ]; then
   echo "Checking if the package is already signed..."
   if dotnet nuget verify "$PACKAGE_PATH" | grep -q 'Package is signed'; then
