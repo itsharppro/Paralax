@@ -17,6 +17,7 @@ for LIBRARY in $LIBRARIES; do
   # Ensure we are working with valid library paths
   if [ -d "src/$LIBRARY/src" ]; then
 
+    # Either force build/test or run only if changes detected
     if [ "$FORCE_BUILD_TEST" = true ] || [ -n "$(git diff --name-only HEAD~1 HEAD | grep "src/$LIBRARY")" ]; then
       echo "Restoring dependencies for $LIBRARY"
       dotnet restore "src/$LIBRARY/src"
@@ -26,7 +27,7 @@ for LIBRARY in $LIBRARIES; do
 
       if [ -d "src/$LIBRARY/tests" ]; then
         echo "Running tests for $LIBRARY"
-        dotnet test "src/$LIBRARY/tests" --configuration Release --no-build \
+        dotnet test "src/$LIBRARY/tests" --configuration Release  \
           --collect:"XPlat Code Coverage" \
           --results-directory TestResults/ \
           /p:CollectCoverage=true \
