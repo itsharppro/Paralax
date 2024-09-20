@@ -24,12 +24,31 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build all projects
-      run: dotnet build --configuration Release --no-restore
-
-    - name: Test all projects with coverage
+    - name: Identify Changed Libraries
+      id: changed_files
       run: |
-        for testProject in $(find ./src -type f -name '*.Tests.csproj'); do
+        # Get a list of all files that were changed in this commit
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+
+        # Initialize an empty variable to store the paths to test projects that were changed
+        TEST_PROJECTS=""
+
+        # Loop through all changed files to identify relevant test projects
+        for file in $CHANGED_FILES; do
+          if [[ "$file" == *"/tests/"* && "$file" == *.Tests.csproj ]]; then
+            TEST_PROJECTS="$TEST_PROJECTS $file"
+          elif [[ "$file" == *"/src/"* && -f "${file%/*}/tests/${file%/*}.Tests.csproj" ]]; then
+            TEST_PROJECTS="$TEST_PROJECTS ${file%/*}/tests/${file%/*}.Tests.csproj"
+          fi
+        done
+
+        # Export the test project paths for use in later steps
+        echo "TEST_PROJECTS=$TEST_PROJECTS" >> $GITHUB_ENV
+
+    - name: Run Tests for Changed Projects
+      if: env.TEST_PROJECTS != ''
+      run: |
+        for testProject in $TEST_PROJECTS; do
           echo "Running tests for $testProject"
           dotnet test $testProject --configuration Release --no-build \
           --collect:"XPlat Code Coverage" \
@@ -40,18 +59,21 @@ jobs:
         done
 
     - name: Upload test results
+      if: env.TEST_PROJECTS != ''
       uses: actions/upload-artifact@v3
       with:
         name: TestResults
         path: TestResults/
 
     - name: Upload coverage report
+      if: env.TEST_PROJECTS != ''
       uses: actions/upload-artifact@v3
       with:
         name: CoverageReport
-        path: TestResults/**/coverage.cobertura.xml
+        path: ***/TestResults/**/coverage.cobertura.xml
 
     - name: Upload coverage to Codecov
+      if: env.TEST_PROJECTS != ''
       uses: codecov/codecov-action@v3
       with:
         files: TestResults/**/coverage.cobertura.xml
@@ -88,4 +110,3 @@ jobs:
       run: |
         chmod +x ./scripts/pack-all.sh
         ./scripts/pack-all.sh
-
