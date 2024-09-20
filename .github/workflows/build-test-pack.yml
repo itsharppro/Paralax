@@ -18,16 +18,19 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 2  # Ensure we fetch at least the last two commits to allow git diff
 
     - name: Identify Changed Libraries
       id: set-libraries
       run: |
-        # If there's no previous commit (first commit or shallow clone), assume all files are changed
-        if [ -z "${{ github.event.before }}" ]; then
-          echo "No previous commit detected, running for all libraries."
+        # Check if there's a previous commit (non-empty), otherwise assume all files are changed
+        if [ -z "${{ github.event.before }}" ] || ! git cat-file -e ${{ github.event.before }}^{commit}; then
+          echo "No valid previous commit detected, running for all libraries."
           CHANGED_FILES=$(git ls-tree -r HEAD --name-only)
         else
           # Get the list of changed files between the previous and current commit
+          echo "Checking for changes between commits."
           CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
         fi
 
