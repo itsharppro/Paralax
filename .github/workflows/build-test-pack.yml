@@ -9,113 +9,38 @@ on:
       - '**'
 
 jobs:
-  # Identify changed libraries job
-  identify_changed_libraries:
+  # Identify changed libraries and run the build and tests
+  build_test:
     runs-on: ubuntu-latest
-    outputs:
-      libraries: ${{ steps.set-libraries.outputs.libraries }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        fetch-depth: 2  # Ensure we fetch at least the last two commits to allow git diff
+        fetch-depth: 2  # Fetch two commits for proper diff
 
-    - name: Identify Changed Libraries
-      id: set-libraries
-      run: |
-        # Check if there's a previous commit (non-empty), otherwise assume all files are changed
-        if [ -z "${{ github.event.before }}" ] || ! git cat-file -e ${{ github.event.before }}^{commit}; then
-          echo "No valid previous commit detected, running for all libraries."
-          CHANGED_FILES=$(git ls-tree -r HEAD --name-only)
-        else
-          # Get the list of changed files between the previous and current commit
-          echo "Checking for changes between commits."
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
-        fi
-
-        # Initialize an empty variable to store the names of libraries that were changed
-        LIBRARIES=()
-
-        # Loop through all changed files to identify relevant libraries
-        for file in $CHANGED_FILES; do
-          if [[ "$file" == *"/src/"* && "$file" == *.csproj ]]; then
-            LIBRARY=$(echo "$file" | cut -d'/' -f3)  # Extract the library name
-            if [[ ! " ${LIBRARIES[@]} " =~ " ${LIBRARY} " ]]; then
-              LIBRARIES+=("$LIBRARY")
-            fi
-          fi
-        done
-
-        # If no libraries were identified, we assume all libraries might be changed
-        if [ ${#LIBRARIES[@]} -eq 0 ]; then
-          echo "No changed libraries detected, processing all."
-          LIBRARIES=($(ls src))
-        fi
-
-        # Output the list of changed libraries as a JSON array
-        echo "LIBRARIES=$(echo ${LIBRARIES[@]} | jq -R -s -c 'split(" ")')" >> $GITHUB_ENV
-
-  # Parallel job for building and testing libraries
-  build_test:
-    needs: identify_changed_libraries
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        library: ${{ fromJson(env.LIBRARIES) }}
-      fail-fast: false
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Setup .NET SDK
+    - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '9.x'
 
-    - name: Restore dependencies for the library
+    - name: Run script to identify changed libraries
       run: |
-        echo "Restoring dependencies for ${{ matrix.library }}"
-        dotnet restore src/${{ matrix.library }}
+        chmod +x ./scripts/identify-changed-libraries.sh
+        ./scripts/identify-changed-libraries.sh
 
-    - name: Build the library
+    - name: Build and test libraries
       run: |
-        echo "Building ${{ matrix.library }}"
-        dotnet build src/${{ matrix.library }} --configuration Release --no-restore
-
-    - name: Test the library
-      run: |
-        echo "Running tests for ${{ matrix.library }}"
-        dotnet test src/${{ matrix.library }}/tests --configuration Release --no-build \
-        --collect:"XPlat Code Coverage" \
-        --results-directory TestResults/ \
-        /p:CollectCoverage=true \
-        /p:CoverletOutputFormat=cobertura \
-        --logger "trx;LogFileName=TestResults.trx"
+        chmod +x ./scripts/build-and-test.sh
+        ./scripts/build-and-test.sh
 
     - name: Upload test results
       uses: actions/upload-artifact@v3
       with:
-        name: TestResults-${{ matrix.library }}
-        path: TestResults/
+        name: TestResults
+        path: src/*/TestResults/
 
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v3
-      with:
-        name: CoverageReport-${{ matrix.library }}
-        path: TestResults/**/coverage.cobertura.xml
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        files: TestResults/**/coverage.cobertura.xml
-        token: ${{ secrets.CODECOV_TOKEN }}
-        flags: unittests
-        name: code-coverage-report-${{ matrix.library }}
-        fail_ci_if_error: true
-
-  # Publish job after builds are successful
+  # Publish job after build and tests are successful
   publish:
     if: github.ref == 'refs/heads/main'
     needs: build_test
@@ -125,16 +50,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Setup .NET SDK
+    - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '9.x'  
+        dotnet-version: '9.x'
 
     - name: Decode and save certificate
       run: |
         echo "${{ secrets.CERTIFICATE_BASE64 }}" | base64 --decode > certificate.cer
         echo "${{ secrets.PRIVATE_KEY_BASE64 }}" | base64 --decode > privatekey.pem
-    
+
     - name: Run publish script for all packages
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
