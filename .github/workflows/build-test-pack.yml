@@ -30,6 +30,8 @@ jobs:
         ./scripts/identify-changed-libraries.sh
 
     - name: Build and test libraries
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}  # Use the secret token for Codecov
       run: |
         chmod +x ./scripts/build-and-test.sh
         ./scripts/build-and-test.sh
