@@ -50,11 +50,16 @@ for LIBRARY in $LIBRARIES; do
           echo "Coverage report not found for $LIBRARY. Expected at $COVERAGE_REPORT"
         fi
 
-        # Dynamically find the TestResults.trx file and move it to the right folder
+        # Dynamically find the TestResults.trx file
         TEST_RESULTS=$(find "src/$LIBRARY/TestResults/" -name "TestResults.trx" | head -n 1)
         if [ -f "$TEST_RESULTS" ]; then
-          echo "Uploading test results for $LIBRARY"
-          mv "$TEST_RESULTS" "src/$LIBRARY/TestResults/"
+          # Check if source and destination are the same before moving
+          if [ "$TEST_RESULTS" != "src/$LIBRARY/TestResults/TestResults.trx" ]; then
+            echo "Uploading test results for $LIBRARY"
+            mv "$TEST_RESULTS" "src/$LIBRARY/TestResults/"
+          else
+            echo "TestResults.trx already in the correct location for $LIBRARY."
+          fi
         else
           echo "TestResults.trx not found for $LIBRARY"
         fi
