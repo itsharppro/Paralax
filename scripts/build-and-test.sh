@@ -42,7 +42,7 @@ for LIBRARY in $LIBRARIES; do
         fi
 
         # Dynamically find the coverage report in the TestResults folder
-        COVERAGE_REPORT=$(find src/$LIBRARY/TestResults/ -name "coverage.cobertura.xml" | head -n 1)
+        COVERAGE_REPORT=$(find "src/$LIBRARY/TestResults/" -name "coverage.cobertura.xml" | head -n 1)
         if [ -f "$COVERAGE_REPORT" ]; then
           echo "Uploading coverage report to Codecov for $LIBRARY"
           bash <(curl -s https://codecov.io/bash) -t "$CODECOV_TOKEN" -f "$COVERAGE_REPORT" -F $LIBRARY
@@ -50,9 +50,15 @@ for LIBRARY in $LIBRARIES; do
           echo "Coverage report not found for $LIBRARY. Expected at $COVERAGE_REPORT"
         fi
 
-        echo "Uploading test results for $LIBRARY"
-        # Move all test result files in the subfolders to the right directory
-        mv src/$LIBRARY/TestResults/*/TestResults.trx "src/$LIBRARY/TestResults/"
+        # Dynamically find the TestResults.trx file and move it to the right folder
+        TEST_RESULTS=$(find "src/$LIBRARY/TestResults/" -name "TestResults.trx" | head -n 1)
+        if [ -f "$TEST_RESULTS" ]; then
+          echo "Uploading test results for $LIBRARY"
+          mv "$TEST_RESULTS" "src/$LIBRARY/TestResults/"
+        else
+          echo "TestResults.trx not found for $LIBRARY"
+        fi
+
       else
         echo "No test project found for $LIBRARY"
       fi
