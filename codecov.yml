@@ -1,0 +1,53 @@
+# codecov.yml
+
+comment:
+  layout: "header, diff, flags, components" 
+
+component_management:
+  default_rules:  
+    statuses:
+      - type: project
+        target: auto
+        branches:
+          - "!main"  # Applies to all branches except 'main'
+          
+  individual_components:
+    - component_id: paralax_core
+      name: Paralax Core
+      paths:
+        - src/Paralax/**
+      statuses:
+        - type: project
+          target: auto 
+
+    - component_id: paralax_cqrs_commands
+      name: Paralax CQRS Commands
+      paths:
+        - src/Paralax.CQRS.Commands/**
+      statuses:
+        - type: project
+          target: auto
+
+    - component_id: paralax_cqrs_queries
+      name: Paralax CQRS Queries
+      paths:
+        - src/Paralax.CQRS.Queries/**
+      statuses:
+        - type: project
+          target: auto
+
+    - component_id: paralax_http
+      name: Paralax HTTP
+      paths:
+        - src/Paralax.HTTP/**
+      statuses:
+        - type: project
+          target: auto
+
+    - component_id: paralax_security
+      name: Paralax Security
+      paths:
+        - src/Paralax.Security/**
+      statuses:
+        - type: project
+          target: auto
