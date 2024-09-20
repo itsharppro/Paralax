@@ -3,9 +3,23 @@
 base_dir="src"
 divider="----------------------------------------"
 
-# Get the list of files that were changed in the current commit
-CHANGED_FILES=$(git diff --name-only $GITHUB_SHA~1 $GITHUB_SHA)
+# Check if this is a pull request and if it's targeting the main branch
+if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_BASE_REF" == "main" ]]; then
+    echo "$divider"
+    echo "Pull request detected targeting the main branch."
+    echo "Comparing changes between the 'dev' and 'main' branches..."
+    echo "$divider"
+    # Compare changes between dev and main branches
+    CHANGED_FILES=$(git diff --name-only origin/main origin/dev)
+else
+    echo "$divider"
+    echo "No pull request detected or not targeting main. Checking commit differences."
+    echo "$divider"
+    # Get the list of files that were changed in the last commit
+    CHANGED_FILES=$(git diff --name-only $GITHUB_SHA~1 $GITHUB_SHA)
+fi
 
+# Function to check if a directory contains changed files
 directory_contains_changes() {
     local dir="$1"
     for file in $CHANGED_FILES; do
@@ -31,7 +45,7 @@ do
     echo "$divider"
     
     if directory_contains_changes "$dir"; then
-        echo "Processing package: $package_name (modified in commit)"
+        echo "Processing package: $package_name (modified)"
         echo "$divider"
 
         if [ -f "$script_path" ]; then
