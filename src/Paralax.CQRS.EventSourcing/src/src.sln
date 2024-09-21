@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paralax.CQRS.EventSourcing", "Paralax.CQRS.EventSourcing.csproj", "{7A999D76-1490-4D10-9E76-86A62A09935B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A999D76-1490-4D10-9E76-86A62A09935B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A999D76-1490-4D10-9E76-86A62A09935B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A999D76-1490-4D10-9E76-86A62A09935B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A999D76-1490-4D10-9E76-86A62A09935B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {11C35A8E-B120-4BF2-ABFE-1EF3D22E5536}
+	EndGlobalSection
+EndGlobal
