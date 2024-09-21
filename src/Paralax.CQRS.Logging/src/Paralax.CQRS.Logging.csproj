@@ -6,4 +6,25 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Paralax" Version="*" />
+    <PackageReference Include="Paralax.Logging" Version="*" />
+    <PackageReference Include="Paralax.CQRS.Commands" Version="*" />
+    <PackageReference Include="Paralax.CQRS.Queries" Version="*" />
+    <PackageReference Include="Paralax.CQRS.Events" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SmartFormat.NET" Version="3.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Paralax.CQRS.Logging.Tests</_Parameter1>
+    </AssemblyAttribute>
+     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>DynamicProxyGenAssembly2</_Parameter1> 
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>
