@@ -3,7 +3,6 @@
 base_dir="src"
 divider="----------------------------------------"
 
-# Get the commit message of the latest commit
 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
 
 # Check if the commit message contains [pack-all-force]
@@ -35,11 +34,11 @@ fi
 directory_contains_changes() {
     local dir="$1"
     if $FORCE_PACK_ALL; then
-        return 0  # If force packing is enabled, mark all directories as changed
+        return 0 
     fi
     for file in $CHANGED_FILES; do
         if [[ "$file" == "$dir"* ]]; then
-            return 0  # Directory contains changed files
+            return 0  
         fi
     done
     return 1  # No changed files in the directory
