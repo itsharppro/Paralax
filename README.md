@@ -1,7 +1,7 @@
 # Paralax Framework
 
 ![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blueviolet?logo=dotnet)
-[![Build Status](https://github.com/yourusername/paralax-framework/actions/workflows/build-test-pack.yml/badge.svg)](https://github.com/yourusername/paralax-framework/actions)
+[![Build Status](https://github.com/itsharppro/Paralax/actions/workflows/build-test-pack.yml/badge.svg)](https://github.com/yourusername/paralax-framework/actions)
 [![NuGet Version](https://img.shields.io/nuget/v/Paralax.svg?style=flat)](https://www.nuget.org/packages/Paralax.Framework/)
 [![Coverage Status](https://codecov.io/gh/itsharppro/Paralax/graph/badge.svg?token=VKEPZNVTOF)](https://codecov.io/gh/itsharppro/Paralax)
 
