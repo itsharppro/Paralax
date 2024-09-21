@@ -32,7 +32,6 @@ else
     CHANGED_FILES=$(git diff --name-only $GITHUB_SHA~1 $GITHUB_SHA)
 fi
 
-# Function to check if a directory contains changed files
 directory_contains_changes() {
     local dir="$1"
     if $FORCE_PACK_ALL; then
