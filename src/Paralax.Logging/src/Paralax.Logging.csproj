@@ -19,4 +19,10 @@
     <PackageReference Include="Serilog.Sinks.Seq" Version="6.0.0" />
   </ItemGroup>
 
+    <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Paralax.Logging.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>
