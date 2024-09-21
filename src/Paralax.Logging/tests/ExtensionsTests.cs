@@ -42,7 +42,7 @@ namespace Paralax.Logging.Tests
 
             // Assert
             var loggingService = host.Services.GetService<ILoggingService>();
-            Assert.NotNull(loggingService);  // Check if logging service is registered
+            Assert.NotNull(loggingService); 
         }
     }
 }
