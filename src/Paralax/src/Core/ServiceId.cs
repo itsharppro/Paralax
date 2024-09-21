@@ -1,7 +1,7 @@
 using System;
 using Paralax.Types;
 
-namespace Paralax
+namespace Paralax.Core
 {
     internal class ServiceId : IServiceId
     {
