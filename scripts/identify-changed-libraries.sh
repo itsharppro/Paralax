@@ -9,7 +9,6 @@ else
   FORCE_BUILD_TEST=false
 fi
 
-# If the force flag is not detected, check for changes between commits
 if [ "$FORCE_BUILD_TEST" = false ]; then
   if [ -z "${GITHUB_EVENT_BEFORE}" ] || ! git cat-file -e ${GITHUB_EVENT_BEFORE}^{commit}; then
     echo "No valid previous commit detected, running for all libraries."
