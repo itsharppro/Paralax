@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Paralax.Security.csproj" />
+    <ProjectReference Include="..\src\Paralax.Security\Paralax.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Paralax.CQRS.EventSourcing.csproj" />
+    <ProjectReference Include="..\src\Paralax.CQRS.EventSourcing\Paralax.CQRS.EventSourcing.csproj" />
   </ItemGroup>
 
 </Project>

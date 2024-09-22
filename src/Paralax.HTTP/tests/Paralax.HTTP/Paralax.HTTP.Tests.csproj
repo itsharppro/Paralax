@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Paralax.HTTP.csproj" />
+    <ProjectReference Include="..\src\Paralax.HTTP\Paralax.HTTP.csproj" />
   </ItemGroup>
 
 </Project>
