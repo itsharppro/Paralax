@@ -25,6 +25,4 @@
     <ProjectReference Include="..\..\src\Paralax.Docs.Scalar\Paralax.Docs.Scalar.csproj" />
   </ItemGroup>
 
-
-
 </Project>
