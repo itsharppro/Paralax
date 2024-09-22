@@ -5,7 +5,7 @@ namespace Paralax.CQRS.Commands
 {
     public interface ICommandDispatcher
     {
-        Task SendAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
-            where TCommand : class, ICommand;
+        Task SendAsync<T>(T command, CancellationToken cancellationToken = default)
+            where T : class, ICommand;
     }
 }
