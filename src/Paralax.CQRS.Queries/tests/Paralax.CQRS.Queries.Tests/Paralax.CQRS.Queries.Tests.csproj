@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Paralax.CQRS.Queries\Paralax.CQRS.Queries.csproj" />
+    <ProjectReference Include="..\..\src\Paralax.CQRS.Queries\Paralax.CQRS.Queries.csproj" />
   </ItemGroup>
 
 </Project>

@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Paralax.CQRS.Events\Paralax.CQRS.Events.csproj" />
+    <ProjectReference Include="..\..\src\Paralax.CQRS.Events\Paralax.CQRS.Events.csproj" />
   </ItemGroup>
 
 </Project>
