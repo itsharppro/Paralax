@@ -61,13 +61,11 @@ namespace Paralax.Docs.Scalar
 
             var routePrefix = string.IsNullOrWhiteSpace(options.RoutePrefix) ? string.Empty : options.RoutePrefix;
 
-            // Enable static files and map Scalar API reference
             app.UseStaticFiles();
 
-            // Use the MapScalarApiReference method on the endpoints
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapScalarApiReference(); // Mapping Scalar documentation
+                endpoints.MapScalarApiReference();
             });
 
             return app;
