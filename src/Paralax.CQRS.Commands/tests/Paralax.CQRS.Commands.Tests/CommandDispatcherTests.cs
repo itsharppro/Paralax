@@ -35,27 +35,27 @@ namespace Paralax.CQRS.Commands.Tests
         }
 
         [Fact]
-        public async Task DispatchAsync_Should_Call_Handler_When_Command_Is_Valid()
+        public async Task SendAsync_Should_Call_Handler_When_Command_Is_Valid()
         {
             // Arrange
             var command = new TestCommand();
 
             // Act
-            await _dispatcher.DispatchAsync(command);
+            await _dispatcher.SendAsync(command);
 
             // Assert
             _commandHandlerMock.Verify(handler => handler.HandleAsync(command, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task DispatchAsync_Should_Throw_Exception_When_Command_Is_Null()
+        public async Task SendAsync_Should_Throw_Exception_When_Command_Is_Null()
         {
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _dispatcher.DispatchAsync<TestCommand>(null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _dispatcher.SendAsync<TestCommand>(null));
         }
 
         [Fact]
-        public async Task DispatchAsync_Should_Throw_Exception_When_Handler_Not_Registered()
+        public async Task SendAsync_Should_Throw_Exception_When_Handler_Not_Registered()
         {
             // Arrange
             var command = new UnhandledCommand();
@@ -65,7 +65,7 @@ namespace Paralax.CQRS.Commands.Tests
                 .Returns(null as ICommandHandler<UnhandledCommand>);
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _dispatcher.DispatchAsync(command));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _dispatcher.SendAsync(command));
         }
 
         // Sample commands
