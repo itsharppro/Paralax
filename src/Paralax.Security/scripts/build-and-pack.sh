@@ -1,18 +1,18 @@
 #!/bin/bash
 
 echo "Executing post-success scripts for branch $GITHUB_REF_NAME"
-echo "Starting build and NuGet package creation for Paralax.Logging..."
+echo "Starting build and NuGet package creation for Paralax.Security..."
 
-cd src/Paralax.Logging/src
+cd src/Paralax.Security/src/Paralax.Security
 
 echo "Restoring NuGet packages..."
 dotnet restore
 
 PACKAGE_VERSION="1.0.$GITHUB_RUN_NUMBER"
-echo "Building and packing the Paralax.Logging library..."
+echo "Building and packing the Paralax.Security library..."
 dotnet pack -c release /p:PackageVersion=$PACKAGE_VERSION --no-restore -o ./nupkg
 
-PACKAGE_PATH="./nupkg/Paralax.Logging.$PACKAGE_VERSION.nupkg"
+PACKAGE_PATH="./nupkg/Paralax.Security.$PACKAGE_VERSION.nupkg"
 
 if [ -f "$PACKAGE_PATH" ]; then
   echo "Checking if the package is already signed..."
@@ -25,7 +25,7 @@ if [ -f "$PACKAGE_PATH" ]; then
       --timestamper http://timestamp.digicert.com
   fi
 
-  echo "Uploading Paralax.Logging package to NuGet..."
+  echo "Uploading Paralax.Security package to NuGet..."
   dotnet nuget push "$PACKAGE_PATH" -k "$NUGET_API_KEY" \
     -s https://api.nuget.org/v3/index.json --skip-duplicate
   echo "Package uploaded to NuGet."

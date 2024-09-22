@@ -1,8 +1,8 @@
 #!/bin/bash
 
-echo "Running tests and collecting coverage for Paralax.Security..."
+echo "Running tests and collecting coverage for Paralax.CQRS.EventSourcing..."
 
-cd src/Paralax.Security/src
+cd src/Paralax.CQRS.EventSourcing/src/Paralax.CQRS.EventSourcing
 
 echo "Restoring NuGet packages..."
 dotnet restore

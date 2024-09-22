@@ -15,19 +15,19 @@ for LIBRARY in $LIBRARIES; do
   echo "Processing $LIBRARY"
 
   # Ensure we are working with valid library paths
-  if [ -d "src/$LIBRARY/src" ]; then
+  if [ -d "src/$LIBRARY/src/$LIBRARY" ]; then
 
     # Either force build/test or run only if changes detected
     if [ "$FORCE_BUILD_TEST" = true ] || [ -n "$(git diff --name-only HEAD~1 HEAD | grep "src/$LIBRARY")" ]; then
       echo "Restoring dependencies for $LIBRARY"
-      dotnet restore "src/$LIBRARY/src"
+      dotnet restore "src/$LIBRARY/src/$LIBRARY"
 
       echo "Building $LIBRARY"
-      dotnet build "src/$LIBRARY/src" --configuration Release --no-restore
+      dotnet build "src/$LIBRARY/src/$LIBRARY" --configuration Release --no-restore
 
-      if [ -d "src/$LIBRARY/tests" ]; then
+      if [ -d "src/$LIBRARY/tests/$LIBRARY.Tests" ]; then
         echo "Running tests for $LIBRARY"
-        dotnet test "src/$LIBRARY/tests" --configuration Release \
+        dotnet test "src/$LIBRARY/tests/$LIBRARY.Tests" --configuration Release \
           --collect:"XPlat Code Coverage" \
           --results-directory "src/$LIBRARY/TestResults/" \
           /p:CollectCoverage=true \

@@ -3,7 +3,7 @@
 echo "Executing post-success scripts for branch $GITHUB_REF_NAME"
 echo "Starting build and NuGet package creation for Paralax.CQRS.EventSourcing..."
 
-cd src/Paralax.CQRS.EventSourcing/src
+cd src/Paralax.CQRS.EventSourcing/src/Paralax.CQRS.EventSourcing
 
 echo "Restoring NuGet packages..."
 dotnet restore
