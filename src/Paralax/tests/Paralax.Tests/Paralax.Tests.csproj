@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Paralax\Paralax.csproj" />
+    <ProjectReference Include="..\..\src\Paralax\Paralax.csproj" />
   </ItemGroup>
 
 </Project>
