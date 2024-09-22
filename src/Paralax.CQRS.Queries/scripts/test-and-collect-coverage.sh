@@ -2,7 +2,7 @@
 
 echo "Running tests and collecting coverage for Paralax.CQRS.Queries..."
 
-cd src/Paralax.CQRS.Queries/src
+cd src/Paralax.CQRS.Queries/src/Paralax.CQRS.Queries
 
 echo "Restoring NuGet packages..."
 dotnet restore
