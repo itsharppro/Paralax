@@ -14,7 +14,7 @@ namespace Paralax.CQRS.Commands.Dispatchers
             _serviceProvider = serviceProvider;
         }
 
-        public async Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
+        public async Task SendAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default)
             where TCommand : class, ICommand
         {
             if (command == null)
