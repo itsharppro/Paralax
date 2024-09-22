@@ -4,7 +4,7 @@
 [![NuGet Version](https://img.shields.io/nuget/v/Paralax.Framework.svg?style=flat)](https://www.nuget.org/packages/Paralax.Framework/)
 [![Coverage Status](https://codecov.io/gh/yourusername/paralax-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/paralax-framework)
 
-The **Paralax Framework** is a modern, modular, and extensible .NET framework designed to streamline microservice architecture development. It provides essential building blocks for services like encryption, hashing, signing, logging, CQRS, and more. The framework is optimized for .NET 9 and is designed to integrate seamlessly with ASP.NET and cloud-native applications.
+The **Paralax Framework** is a modern, modular, and extensible .NET framework designed to streamline microservice architecture development. It provides essential building blocks for services like encryption, hashing, signing, logging, CQRS, and more. The framework is optimized for .NET 9 and is designed to integrate seamlessly with ASP.NET and cloud-native applications.  
 
 ## Features
 
