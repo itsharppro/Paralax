@@ -14,6 +14,13 @@
     <PackageReference Include="NetJSON" Version="1.4.4" />
     <PackageReference Include="Utf8Json" Version="1.3.7" />
   </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Paralax.WebApi.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   
 
 </Project>

@@ -11,14 +11,17 @@ namespace Paralax.WebApi.Formatters
 {
     internal class JsonInputFormatter : IInputFormatter
     {
-        private const string EmptyJson = "{}";  
-        private readonly ConcurrentDictionary<Type, MethodInfo> _methods = new();  
+        private const string EmptyJson = "{}";
+        private readonly ConcurrentDictionary<Type, MethodInfo> _methods = new();
         private readonly MethodInfo _deserializeMethod;
 
         public JsonInputFormatter()
         {
+            // Ensure that the correct Deserialize method is selected
             _deserializeMethod = typeof(NetJSON.NetJSON).GetMethods()
-                .Single(m => m.IsGenericMethod && m.Name == nameof(NetJSON.NetJSON.Deserialize)); 
+                .Single(m => m.IsGenericMethod && m.Name == nameof(NetJSON.NetJSON.Deserialize) 
+                            && m.GetParameters().Length == 1
+                            && m.GetParameters()[0].ParameterType == typeof(string)); // Ensure it's the correct overload
         }
 
         public bool CanRead(InputFormatterContext context)
@@ -47,10 +50,18 @@ namespace Paralax.WebApi.Formatters
                 json = EmptyJson;
             }
 
-            // Use NetJSON to deserialize the JSON string
-            var result = method.Invoke(null, new object[] { json });
+            try
+            {
+                // Use NetJSON to deserialize the JSON string
+                var result = method.Invoke(null, new object[] { json });
 
-            return await InputFormatterResult.SuccessAsync(result);
+                return await InputFormatterResult.SuccessAsync(result);
+            }
+            catch (Exception ex)
+            {
+                // Handle deserialization errors
+                throw new InvalidOperationException("Invalid JSON format", ex);
+            }
         }
     }
 }
