@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="8.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.0.2" />
+    <PackageReference Include="Paralax" Version="1.0.155" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2" />
+  </ItemGroup>
+
+</Project>
