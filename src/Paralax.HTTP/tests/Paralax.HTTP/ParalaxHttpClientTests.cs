@@ -30,7 +30,7 @@ namespace Paralax.HTTP.Tests
                 BaseAddress = new Uri("https://api.example.com")
             };
 
-            _paralaxHttpClient = new ParalaxHttpClient(_httpClient, _serializerMock.Object);
+            _paralaxHttpClient = new ParalaxHttpClient(_httpClient, new HttpClientOptions(), _serializerMock.Object, null, null);
         }
 
         [Fact]
@@ -142,10 +142,8 @@ namespace Paralax.HTTP.Tests
             _serializerMock.Setup(s => s.DeserializeAsync<Dictionary<string, int>>(It.IsAny<Stream>()))
                 .ReturnsAsync(new Dictionary<string, int> { { "id", 1 } });
 
-            var jsonContent = new StringContent("{\"Name\":\"Test\"}", Encoding.UTF8, "application/json");
-
             // Act
-            var result = await _paralaxHttpClient.PostAsync<Dictionary<string, int>>("/test", jsonContent);
+            var result = await _paralaxHttpClient.PostAsync<Dictionary<string, int>>("/test", data);
 
             // Assert
             result.Should().ContainKey("id");
@@ -155,6 +153,7 @@ namespace Paralax.HTTP.Tests
             _serializerMock.Verify(s => s.Serialize(It.IsAny<object>()), Times.Once);
             _serializerMock.Verify(s => s.DeserializeAsync<Dictionary<string, int>>(It.IsAny<Stream>()), Times.Once);
         }
+
 
         [Fact]
         public async Task SendAsync_ShouldRetryOnFailure()
