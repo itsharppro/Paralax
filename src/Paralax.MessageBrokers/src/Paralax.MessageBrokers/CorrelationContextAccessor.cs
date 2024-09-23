@@ -4,19 +4,16 @@ namespace Paralax.MessageBrokers
     {
         private static readonly AsyncLocal<CorrelationContextHolder> Holder = new();
 
-        public object CorrelationContext
+        public object? CorrelationContext
         {
             get => Holder.Value?.Context;
             set
             {
-                var holder = Holder.Value;
-
-                if (holder != null)
+                if (value == null)
                 {
-                    holder.Context = null;
+                    Holder.Value = null;
                 }
-
-                if (value != null)
+                else
                 {
                     Holder.Value = new CorrelationContextHolder { Context = value };
                 }
@@ -25,7 +22,7 @@ namespace Paralax.MessageBrokers
 
         private class CorrelationContextHolder
         {
-            public object Context;
+            public object? Context;
         }
     }
 }

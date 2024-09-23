@@ -4,19 +4,16 @@ namespace Paralax.MessageBrokers
     {
         private static readonly AsyncLocal<MessageContextHolder> Holder = new();
 
-        public IMessageProperties MessageProperties
+        public IMessageProperties? MessageProperties
         {
             get => Holder.Value?.Properties;
             set
             {
-                var holder = Holder.Value;
-
-                if (holder != null)
+                if (value == null)
                 {
-                    holder.Properties = null;
+                    Holder.Value = null; 
                 }
-
-                if (value != null)
+                else
                 {
                     Holder.Value = new MessageContextHolder { Properties = value };
                 }
@@ -25,7 +22,7 @@ namespace Paralax.MessageBrokers
 
         private class MessageContextHolder
         {
-            public IMessageProperties Properties;
+            public IMessageProperties? Properties;
         }
     }
 }
