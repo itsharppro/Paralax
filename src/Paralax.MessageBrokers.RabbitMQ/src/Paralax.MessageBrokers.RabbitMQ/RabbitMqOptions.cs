@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace Paralax.MessageBrokers.RabbitMQ
 {
     public class RabbitMqOptions
@@ -48,6 +45,9 @@ namespace Paralax.MessageBrokers.RabbitMQ
         
         // Dead Letter Queue Options
         public DeadLetterOptions DeadLetter { get; set; } = new DeadLetterOptions();
+        
+        // SSL Options - This is the property that was missing
+        public SslOptions Ssl { get; set; } = new SslOptions();
         
         // Quality of Service (QoS) Options
         public QosOptions Qos { get; set; } = new QosOptions();
