@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using Paralax.CQRS.Events;
 using Paralax.CQRS.Queries;
+using Paralax.CQRS.Commands;
+
 
 namespace Paralax.CQRS.WebApi
 {

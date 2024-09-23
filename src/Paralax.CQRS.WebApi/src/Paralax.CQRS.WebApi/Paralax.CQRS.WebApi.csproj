@@ -8,10 +8,10 @@
 
   <ItemGroup>
     <PackageReference Include="NetJSON" Version="1.4.4" />
-    <PackageReference Include="Paralax.CQRS.Commands" Version="1.0.137" />
-    <PackageReference Include="Paralax.CQRS.Events" Version="1.0.137" />
-    <PackageReference Include="Paralax.CQRS.Queries" Version="1.0.137" />
-    <PackageReference Include="Paralax.WebApi" Version="1.0.137" />
+    <PackageReference Include="Paralax.CQRS.Commands" Version="1.0.140" />
+    <PackageReference Include="Paralax.CQRS.Events" Version="1.0.140" />
+    <PackageReference Include="Paralax.CQRS.Queries" Version="1.0.140" />
+    <PackageReference Include="Paralax.WebApi" Version="1.0.140" />
   </ItemGroup>
 
 
