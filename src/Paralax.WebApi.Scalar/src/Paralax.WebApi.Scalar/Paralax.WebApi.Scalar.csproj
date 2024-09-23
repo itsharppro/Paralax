@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.Scalar" Version="1.1.6" />
+    <PackageReference Include="Paralax" Version="1.0.140" />
+    <PackageReference Include="Paralax.Docs.Scalar" Version="1.0.140" />
+  </ItemGroup>
+
+</Project>
