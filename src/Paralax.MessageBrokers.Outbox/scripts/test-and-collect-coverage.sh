@@ -1,8 +1,8 @@
 #!/bin/bash
 
-echo "Running tests and collecting coverage for Paralax.MessageBrokers.Outbox..."
+echo "Running tests and collecting coverage for Paralax.MessageBrokers..."
 
-cd src/Paralax.MessageBrokers.Outbox/tests/Paralax.MessageBrokers.Outbox
+cd src/Paralax.MessageBrokers/src/Paralax.MessageBrokers
 
 echo "Restoring NuGet packages..."
 dotnet restore
