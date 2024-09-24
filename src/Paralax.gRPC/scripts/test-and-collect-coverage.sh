@@ -2,7 +2,7 @@
 
 echo "Running tests and collecting coverage for Paralax.gRPC..."
 
-cd src/Paralax.gRPC/tests/Paralax.gRPC
+cd src/Paralax.gRPC/tests/Paralax.gRPC.Tests
 
 echo "Restoring NuGet packages..."
 dotnet restore
