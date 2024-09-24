@@ -1,8 +1,8 @@
 #!/bin/bash
 
-echo "Running tests and collecting coverage for Paralax.Logging..."
+echo "Running tests and collecting coverage for Paralax.gRPC.Protobuf..."
 
-cd src/Paralax.Logging/src/Paralax.Logging.Tests
+cd src/Paralax.gRPC.Protobuf/tests/Paralax.gRPC.Protobuf.Tests
 
 echo "Restoring NuGet packages..."
 dotnet restore
