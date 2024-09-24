@@ -1,12 +1,16 @@
 using Microsoft.Extensions.DependencyInjection;
 using Paralax.Common;
 
-public static class ProtobufServiceCollectionExtensions
+namespace Paralax.gRPC.Protobuf
 {
-    public static IServiceCollection AddCommonProtobufServices(this IServiceCollection services)
+    public static class Extensions
     {
-        services.AddSingleton<Metadata>();
-        services.AddSingleton<Error>();
-        return services;
+        public static IServiceCollection AddCommonProtobufServices(this IServiceCollection services)
+        {
+            services.AddSingleton<Metadata>();
+            services.AddSingleton<Error>();
+            services.AddSingleton<Status>();
+            return services;
+        }
     }
 }
