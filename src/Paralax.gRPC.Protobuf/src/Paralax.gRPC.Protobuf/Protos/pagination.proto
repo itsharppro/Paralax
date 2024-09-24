@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package paralax.common;
+
+message Pagination {
+    int32 page_number = 1;        // Current page number
+    int32 page_size = 2;          // Number of items per page
+    int32 total_pages = 3;        // Total number of pages
+    int64 total_items = 4;        // Total number of items
+    bool is_first_page = 5;       // Indicates if this is the first page
+    bool is_last_page = 6;        // Indicates if this is the last page
+    bool has_next_page = 7;       // Indicates if there is a next page
+    bool has_previous_page = 8;   // Indicates if there is a previous page
+    int32 items_count = 9;       // Number of items on the current page
+}

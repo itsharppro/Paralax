@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package paralax.common;
+
+message Status {
+    bool success = 1;
+    string message = 2;
+    int32 code = 3; // Add an optional code field for HTTP status or custom error codes
+    string details = 4; // Additional details for logging or debug
+}
+
+message Error {
+    int32 code = 1; // Error code
+    string message = 2; // Error message
+    repeated string details = 3; // Additional error details, stack traces, etc.
+}
+
+message Metadata {
+    string request_id = 1; // Unique request ID for tracking in logs
+    string timestamp = 2; // Timestamp for when the response was generated
+    string service_name = 3; // The name of the service handling the request
+}
+
