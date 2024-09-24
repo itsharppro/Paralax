@@ -19,7 +19,7 @@ namespace Paralax.gRPC.Protobuf.Utilities
                 IsLastPage = pagedResult.CurrentPage == pagedResult.TotalPages,
                 HasNextPage = pagedResult.CurrentPage < pagedResult.TotalPages,
                 HasPreviousPage = pagedResult.CurrentPage > 1,
-                ItemsCount = pagedResult.Items.Count() // Updated to use ItemCount
+                ItemsCount = pagedResult.Items.Count() 
             };
         }
     }
