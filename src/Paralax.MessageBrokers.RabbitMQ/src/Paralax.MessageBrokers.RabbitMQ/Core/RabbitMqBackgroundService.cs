@@ -293,12 +293,12 @@ namespace Paralax.MessageBrokers.RabbitMQ.Internals
 
         private class EmptyExceptionToMessageMapper : IExceptionToMessageMapper
         {
-            public object Map(Exception exception, object message) => null;
+            public FailedMessage Map(Exception exception, object message) => null;
         }
 
         private class EmptyExceptionToFailedMessageMapper : IExceptionToFailedMessageMapper
         {
-            public object Map(Exception exception, object message) => null;
+            public FailedMessage Map(Exception exception, object message) => null;
         }
     }
 }
