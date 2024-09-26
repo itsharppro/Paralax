@@ -1,15 +1,12 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
-using OpenTelemetry.Trace;
-using OpenTelemetry.Context.Propagation;
 using Paralax.MessageBrokers.RabbitMQ;
 using Paralax.MessageBrokers.RabbitMQ.Plugins;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
+using Jaeger;
 using OpenTracing;
 using OpenTracing.Tag;
-using Jaeger;
+using RabbitMQ.Client.Events;
 
 namespace Paralax.Tracing.Jaeger.RabbitMQ.Plugins
 {
@@ -64,7 +61,7 @@ namespace Paralax.Tracing.Jaeger.RabbitMQ.Plugins
                 return spanBuilder.StartActive(true);
             }
 
-            var spanContext = Jaeger.SpanContext.ContexFromString(serializedSpanContext);
+            var spanContext = SpanContext.ContextFromString(serializedSpanContext);
 
             return spanBuilder
                 .AddReference(References.FollowsFrom, spanContext)
