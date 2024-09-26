@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paralax.Metrics.AppMetrics", "Paralax.Metrics.AppMetrics.csproj", "{A3089125-CD71-48AB-9B8A-17A37E4EAC44}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A3089125-CD71-48AB-9B8A-17A37E4EAC44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3089125-CD71-48AB-9B8A-17A37E4EAC44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3089125-CD71-48AB-9B8A-17A37E4EAC44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3089125-CD71-48AB-9B8A-17A37E4EAC44}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2ED9DCFB-05B5-4FE4-A18C-591D96CD1BED}
+	EndGlobalSection
+EndGlobal
