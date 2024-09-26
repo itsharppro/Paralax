@@ -15,7 +15,6 @@ else
     FORCE_PACK_ALL=false
 fi
 
-# Check if this is a pull request and if it's targeting the main branch
 if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_BASE_REF" == "main" ]]; then
     echo "$divider"
     echo "Pull request detected targeting the main branch."
