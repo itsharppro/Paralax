@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Paralax.CQRS.Commands" Version="1.0.166" />
+    <PackageReference Include="Paralax.CQRS.Events" Version="1.0.166" />
+    <PackageReference Include="Paralax.MessageBrokers" Version="1.0.166" />
+  </ItemGroup>
+
+</Project>
