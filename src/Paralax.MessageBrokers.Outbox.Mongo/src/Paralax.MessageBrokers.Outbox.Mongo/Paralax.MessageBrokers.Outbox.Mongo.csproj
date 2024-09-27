@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
+    <PackageReference Include="Paralax" Version="1.0.175" />
+    <PackageReference Include="Paralax.MessageBrokers.Outbox" Version="1.0.169" />
+    <PackageReference Include="Paralax.Persistence.MongoDB" Version="1.0.175" />
+  </ItemGroup>
+
+</Project>
