@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Resources;
 using System;
@@ -9,42 +10,37 @@ namespace Paralax.Tracing.Jaeger
 {
     public static class Extensions
     {
-        // Initializes Jaeger tracing with OpenTelemetry and configures the service collection
-        public static IServiceCollection AddJaegerTracing(this IServiceCollection services, Action<JaegerOptionsBuilder> configureOptions)
+        public static IParalaxBuilder AddJaegerTracing(this IParalaxBuilder builder)
         {
-            var builder = new JaegerOptionsBuilder();
-            configureOptions(builder);
-            var options = builder.Build();
+            // Get configuration and Jaeger options
+            var configuration = builder.Services.BuildServiceProvider().GetRequiredService<IConfiguration>();
+            var jaegerOptions = configuration.GetSection("Jaeger").Get<JaegerOptions>();
 
-            if (!options.Enabled)
+            if (!jaegerOptions.Enabled)
             {
-                return services; // Return early if tracing is not enabled
+                return builder;
             }
 
-            services.AddOpenTelemetry()
+            // Add OpenTelemetry services
+            builder.Services.AddOpenTelemetry()
                 .WithTracing(traceBuilder =>
                 {
                     traceBuilder
                         .SetResourceBuilder(ResourceBuilder.CreateDefault()
-                            .AddService(options.ServiceName)) // Set service name
+                            .AddService(jaegerOptions.ServiceName)) // Set service name
                         .AddAspNetCoreInstrumentation() // Add ASP.NET Core instrumentation
                         .AddHttpClientInstrumentation() // Add HTTP client instrumentation
-                        .AddJaegerExporter(jaegerOptions =>
+                        .AddJaegerExporter(jaegerExporterOptions =>
                         {
                             // Configure Jaeger exporter settings
-                            jaegerOptions.AgentHost = options.UdpHost ?? "localhost";
-                            jaegerOptions.AgentPort = options.UdpPort > 0 ? options.UdpPort : 6831;
-                            jaegerOptions.MaxPayloadSizeInBytes = options.MaxPacketSize;
+                            jaegerExporterOptions.Endpoint = new Uri(jaegerOptions.HttpSender?.Endpoint ?? "http://localhost:14268/api/traces");
 
-                            if (options.HttpSender != null && !string.IsNullOrEmpty(options.HttpSender.Endpoint))
-                            {
-                                jaegerOptions.Endpoint = new Uri(options.HttpSender.Endpoint);
-                            }
+                            // Note: OpenTelemetry Jaeger Exporter uses the Endpoint property for configuration.
                         });
 
-                    if (!string.IsNullOrWhiteSpace(options.Sampler))
+                    if (!string.IsNullOrWhiteSpace(jaegerOptions.Sampler))
                     {
-                        traceBuilder.SetSampler(new TraceIdRatioBasedSampler(options.SamplingRate));
+                        traceBuilder.SetSampler(new TraceIdRatioBasedSampler(jaegerOptions.SamplingRate));
                     }
                     else
                     {
@@ -52,20 +48,7 @@ namespace Paralax.Tracing.Jaeger
                     }
                 });
 
-            return services;
-        }
-
-        public static IApplicationBuilder UseJaegerTracing(this IApplicationBuilder app)
-        {
-            using var scope = app.ApplicationServices.CreateScope();
-            var options = scope.ServiceProvider.GetRequiredService<JaegerOptions>();
-
-            if (!options.Enabled)
-            {
-                return app; 
-            }
-
-            return app;
+            return builder;
         }
     }
 }
