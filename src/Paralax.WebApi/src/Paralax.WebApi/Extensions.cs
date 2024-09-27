@@ -95,6 +95,16 @@ namespace Paralax.WebApi
             }
         }
 
+        public static IParalaxBuilder AddErrorHandler<T>(this IParalaxBuilder builder)
+            where T : class, IExceptionToResponseMapper
+        {
+            builder.Services.AddTransient<ErrorHandlerMiddleware>();
+            builder.Services.AddSingleton<IExceptionToResponseMapper, T>();
+
+            return builder;
+        }
+
+
         public static T ReadQuery<T>(this HttpContext context) where T : class
         {
             var request = context.Request;
