@@ -4,7 +4,7 @@ using Paralax.Core;
 using Paralax.CQRS.Queries; 
 using Paralax.CQRS.Queries.Dispatchers;
 
-namespace Paralax.CQRS.Extensions
+namespace Paralax.CQRS.Queries
 {
     public static class Extensions
     {
