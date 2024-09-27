@@ -20,7 +20,7 @@ if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_BASE_REF" == "main" ]];
     echo "Pull request detected targeting the main branch."
     echo "Comparing changes between the 'dev' and 'main' branches..."
     echo "$divider"
-    # Compare changes between dev and main branches
+
     CHANGED_FILES=$(git diff --name-only origin/main origin/dev)
 else
     echo "$divider"
