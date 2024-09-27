@@ -23,9 +23,9 @@ namespace Paralax.Metrics.AppMetrics
         private const string AppSectionName = "app";
         private const string RegistryName = "metrics.metrics";
 
-        [Description("For the time being it sets Kestrel's AllowSynchronousIO = true, see https://github.com/AppMetrics/AppMetrics/issues/396")]
-        public static IServiceCollection AddMetrics(this IServiceCollection services,
-            IConfiguration configuration, string metricsSectionName = MetricsSectionName, string appSectionName = AppSectionName)
+         [Description("For the time being it sets Kestrel's AllowSynchronousIO = true, see https://github.com/AppMetrics/AppMetrics/issues/396")]
+        public static IParalaxBuilder AddMetrics(this IParalaxBuilder builder,
+            string metricsSectionName = MetricsSectionName, string appSectionName = AppSectionName)
         {
             if (string.IsNullOrWhiteSpace(metricsSectionName))
             {
@@ -37,15 +37,15 @@ namespace Paralax.Metrics.AppMetrics
                 appSectionName = AppSectionName;
             }
 
-            var metricsOptions = configuration.GetSection(metricsSectionName).Get<MetricsOptions>();
-            var appOptions = configuration.GetSection(appSectionName).Get<AppOptions>();
+            var metricsOptions = builder.GetOptions<MetricsOptions>(metricsSectionName);
+            var appOptions = builder.GetOptions<AppOptions>(appSectionName);
 
-            return services.AddMetrics(metricsOptions, appOptions);
+            return builder.AddMetrics(metricsOptions, appOptions);
         }
 
         [Description("For the time being it sets Kestrel's AllowSynchronousIO = true, see https://github.com/AppMetrics/AppMetrics/issues/396")]
-        public static IServiceCollection AddMetrics(this IServiceCollection services,
-            Func<IMetricsOptionsBuilder, IMetricsOptionsBuilder> buildOptions, IConfiguration configuration, string appSectionName = AppSectionName)
+        public static IParalaxBuilder AddMetrics(this IParalaxBuilder builder,
+            Func<IMetricsOptionsBuilder, IMetricsOptionsBuilder> buildOptions, string appSectionName = AppSectionName)
         {
             if (string.IsNullOrWhiteSpace(appSectionName))
             {
@@ -53,23 +53,23 @@ namespace Paralax.Metrics.AppMetrics
             }
 
             var metricsOptions = buildOptions(new MetricsOptionsBuilder()).Build();
-            var appOptions = configuration.GetSection(appSectionName).Get<AppOptions>();
+            var appOptions = builder.GetOptions<AppOptions>(appSectionName);
 
-            return services.AddMetrics(metricsOptions, appOptions);
+            return builder.AddMetrics(metricsOptions, appOptions);
         }
 
         [Description("For the time being it sets Kestrel's and IIS ServerOptions AllowSynchronousIO = true, see https://github.com/AppMetrics/AppMetrics/issues/396")]
-        public static IServiceCollection AddMetrics(this IServiceCollection services, MetricsOptions metricsOptions,
+        public static IParalaxBuilder AddMetrics(this IParalaxBuilder builder, MetricsOptions metricsOptions,
             AppOptions appOptions)
         {
-            services.AddSingleton(metricsOptions);
+            builder.Services.AddSingleton(metricsOptions);
             if (!_initialized && metricsOptions.Enabled)
             {
                 _initialized = true;
 
                 //TODO: Remove once fixed https://github.com/AppMetrics/AppMetrics/issues/396
-                services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
-                services.Configure<IISServerOptions>(o => o.AllowSynchronousIO = true);
+                builder.Services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
+                builder.Services.Configure<IISServerOptions>(o => o.AllowSynchronousIO = true);
 
                 var metricsBuilder = new MetricsBuilder().Configuration.Configure(cfg =>
                 {
@@ -119,20 +119,20 @@ namespace Paralax.Metrics.AppMetrics
                 var metrics = metricsBuilder.Build();
                 var metricsWebHostOptions = GetMetricsWebHostOptions(metricsOptions);
 
-                services.AddHealth();
-                services.AddHealthEndpoints();
-                services.AddMetricsTrackingMiddleware();
-                services.AddMetricsEndpoints();
-                services.AddSingleton<IStartupFilter>(new DefaultMetricsEndpointsStartupFilter());
-                services.AddSingleton<IStartupFilter>(new DefaultHealthEndpointsStartupFilter());
-                services.AddSingleton<IStartupFilter>(new DefaultMetricsTrackingStartupFilter());
-                services.AddMetricsReportingHostedService(metricsWebHostOptions.UnobservedTaskExceptionHandler);
-                services.AddMetricsEndpoints(metricsWebHostOptions.EndpointOptions);
-                services.AddMetricsTrackingMiddleware(metricsWebHostOptions.TrackingMiddlewareOptions);
-                services.AddMetrics(metrics);
+                builder.Services.AddHealth();
+                builder.Services.AddHealthEndpoints();
+                builder.Services.AddMetricsTrackingMiddleware();
+                builder.Services.AddMetricsEndpoints();
+                builder.Services.AddSingleton<IStartupFilter>(new DefaultMetricsEndpointsStartupFilter());
+                builder.Services.AddSingleton<IStartupFilter>(new DefaultHealthEndpointsStartupFilter());
+                builder.Services.AddSingleton<IStartupFilter>(new DefaultMetricsTrackingStartupFilter());
+                builder.Services.AddMetricsReportingHostedService(metricsWebHostOptions.UnobservedTaskExceptionHandler);
+                builder.Services.AddMetricsEndpoints(metricsWebHostOptions.EndpointOptions);
+                builder.Services.AddMetricsTrackingMiddleware(metricsWebHostOptions.TrackingMiddlewareOptions);
+                builder.Services.AddMetrics(metrics);
             }
 
-            return services;
+            return builder;
         }
 
         private static MetricsWebHostOptions GetMetricsWebHostOptions(MetricsOptions metricsOptions)
