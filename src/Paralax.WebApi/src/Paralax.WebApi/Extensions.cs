@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetJSON; 
 using Paralax.WebApi.Exceptions;
+using Paralax.WebApi.Formatters;
 using Paralax.WebApi.Requests;
 
 namespace Paralax.WebApi
@@ -27,6 +28,8 @@ namespace Paralax.WebApi
         private const string JsonContentType = "application/json";
         private const string LocationHeader = "Location";
         private const string EmptyJsonObject = "{}";
+        private const string SectionName = "webApi";
+        private const string RegistryName = "webApi";
         private static bool _bindRequestFromRoute;
 
         public static IApplicationBuilder UseEndpoints(this IApplicationBuilder app, Action<IEndpointsBuilder> build, bool useAuthorization = true, Action<IApplicationBuilder> middleware = null)
@@ -52,6 +55,58 @@ namespace Paralax.WebApi
         {
             var handler = context.RequestServices.GetRequiredService<IRequestHandler<TRequest, TResult>>();
             return handler.HandleAsync(request);
+        }
+
+         public static IParalaxBuilder AddWebApi(this IParalaxBuilder builder, Action<IMvcCoreBuilder> configureMvc = null, string sectionName = SectionName)
+        {
+            if (string.IsNullOrWhiteSpace(sectionName))
+            {
+                sectionName = SectionName;
+            }
+
+            if (!builder.TryRegister(RegistryName))
+            {
+                return builder;
+            }
+
+            // Add HttpContextAccessor and other needed services
+            builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            builder.Services.AddSingleton(new WebApiEndpointDefinitions());
+
+            var options = builder.GetOptions<WebApiOptions>(sectionName);
+            builder.Services.AddSingleton(options);
+
+            var mvcCoreBuilder = builder.Services
+                .AddLogging()
+                .AddMvcCore();
+
+            mvcCoreBuilder.AddMvcOptions(o =>
+            {
+                o.OutputFormatters.Clear();
+                o.OutputFormatters.Add(new JsonOutputFormatter()); 
+                o.InputFormatters.Clear();
+                o.InputFormatters.Add(new JsonInputFormatter()); 
+            })
+            .AddDataAnnotations()
+            .AddApiExplorer()
+            .AddAuthorization();
+
+            configureMvc?.Invoke(mvcCoreBuilder);
+
+            builder.Services.Scan(scan =>
+                scan.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
+                    .AddClasses(classes => classes.AssignableTo(typeof(IRequestHandler<,>)))
+                    .AsImplementedInterfaces()
+                    .WithTransientLifetime());
+
+            builder.Services.AddTransient<IRequestDispatcher, RequestDispatcher>();
+
+            if (builder.Services.All(s => s.ServiceType != typeof(IExceptionToResponseMapper)))
+            {
+                builder.Services.AddTransient<IExceptionToResponseMapper>();
+            }
+
+            return builder;
         }
 
         public static async Task<T> ReadJsonAsync<T>(this HttpContext context)
