@@ -50,7 +50,13 @@ echo "$divider"
 declare -a packages=(
     "Paralax"
     "Paralax.Auth"
+    "Paralax.Logging"
+    "Paralax.WebApi"
+    "Paralax.MessageBrokers"
+    "Paralax.gRPC"
+    "Paralax.Security"
     "Paralax.Auth.Distributed"
+
     "Paralax.CQRS.Commands"
     "Paralax.CQRS.Events"
     "Paralax.CQRS.EventSourcing"
@@ -65,8 +71,7 @@ declare -a packages=(
     "Paralax.Persistence.MongoDB"
     "Paralax.Persistence.Redis"
     "Paralax.LoadBalancing.Fabio"
-    "Paralax.Logging"
-    "Paralax.MessageBrokers"
+
     "Paralax.MessageBrokers.CQRS"
     "Paralax.MessageBrokers.Outbox"
     "Paralax.MessageBrokers.Outbox.Mongo"
@@ -74,10 +79,10 @@ declare -a packages=(
     "Paralax.Metrics.AppMetrics"
     "Paralax.Metrics.Prometheus"
     "Paralax.Secrets.Vault"
-    "Paralax.Security"
+    
     "Paralax.Tracing.Jaeger"
     "Paralax.Tracing.Jaeger.RabbitMQ"
-    "Paralax.WebApi"
+  
     "Paralax.WebApi.Scalar"
     "Paralax.WebApi.Security"
     "Paralax.WebApi.Swagger"
