@@ -16,34 +16,33 @@ else
     FORCE_PACK_ALL=false
 fi
 
-# # Check for pull request to main or else detect changes
-# if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_BASE_REF" == "main" ]]; then
-#     echo "$divider"
-#     echo "Pull request detected targeting the main branch."
-#     echo "Comparing changes between the 'dev' and 'main' branches..."
-#     echo "$divider"
+# Fetch the full history to ensure commit comparison works (if shallow clone)
+git fetch --prune --unshallow || git fetch --prune
 
-#     # Compare changes between 'dev' and 'main'
-#     CHANGED_FILES=$(git diff --name-only origin/main origin/dev)
-# else
-#     echo "$divider"
-#     echo "No pull request detected or not targeting main. Checking commit differences."
-#     echo "$divider"
+# Detect changes between commits (only relevant if not forcing pack-all)
+if ! $FORCE_PACK_ALL; then
+    echo "$divider"
+    echo "Detecting changed files..."
+    echo "$divider"
 
-#     # Use the current commit if SHA is missing
-#     if [ -z "$GITHUB_SHA" ]; then
-#         GITHUB_SHA=$(git rev-parse HEAD)
-#     fi
+    # Use the current commit if GITHUB_SHA is missing
+    if [ -z "$GITHUB_SHA" ]; then
+        GITHUB_SHA=$(git rev-parse HEAD)
+    fi
 
-#     # Check for changed files in the last commit
-#     CHANGED_FILES=$(git diff --name-only "$GITHUB_SHA~1" "$GITHUB_SHA" || echo "")
-# fi
+    # Compare changes in the last commit
+    CHANGED_FILES=$(git diff --name-only "$GITHUB_SHA~1" "$GITHUB_SHA")
+    if [[ -z "$CHANGED_FILES" ]]; then
+        echo "No changes detected."
+        exit 0
+    fi
+fi
 
 # Function to detect if a directory contains any changes
 directory_contains_changes() {
     local dir="$1"
     if $FORCE_PACK_ALL; then
-        return 0
+        return 0  # Force packaging of all directories
     fi
     for file in $CHANGED_FILES; do
         if [[ "$file" == "$dir"* ]]; then
@@ -53,11 +52,11 @@ directory_contains_changes() {
     return 1  # No changes detected
 }
 
-# Function to get a list of dependencies from the .csproj file using 'dotnet list package'
+# Function to get project dependencies from .csproj using 'dotnet list package'
 get_dependencies() {
     local project_file="$1"
     if [ -f "$project_file" ]; then
-        dotnet list "$project_file" package --include-transitive | awk '/>/' | awk '{print $2}'
+        dotnet list "$project_file" package --include-transitive | grep -oP '(?<=> ).+?(?= )'
     fi
 }
 
