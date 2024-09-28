@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Paralax.Core;
 using Paralax.Types;
 using Figletize; 
+using Figgle;
 
 namespace Paralax
 {
@@ -33,17 +34,7 @@ namespace Paralax
                 var version = options.DisplayVersion ? $" {options.Version}" : string.Empty;
                 var fullMessage = $"{options.Name}{version}";
 
-                string figletText = FigletTools.RenderFiglet(fullMessage, "banner");
-
-                var fontInstance = FigletizeFonts.TryGetByName("banner");
-                if (fontInstance == null)
-                {
-                    Console.Error.WriteLine("Font 'banner' not found. Using default.");
-                }
-                else
-                {
-                    figletText = fontInstance.Render(fullMessage);
-                }
+                string figletText = FiggleFonts.Standard.Render(fullMessage);
 
                 Console.WriteLine(figletText);
             }

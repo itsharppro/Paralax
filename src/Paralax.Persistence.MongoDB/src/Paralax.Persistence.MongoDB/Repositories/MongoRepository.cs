@@ -19,13 +19,11 @@ namespace Paralax.Persistence.MongoDB.Repositories
             _collection = collection;
         }
 
-        // Implementing the Collection property from IMongoRepository
-        public IMongoCollection<TEntity> Collection => throw new NotImplementedException("The collection is managed internally by IMongoDbCollection.");
+        public IMongoCollection<TEntity> Collection => _collection.AsCollection();
 
         public Task<TEntity> GetAsync(TIdentifiable id)
             => _collection.FindAsync(e => e.Id.Equals(id));
 
-        // Implementing GetAsync with predicate
         public Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate)
             => _collection.FindAsync(predicate);
 
