@@ -56,13 +56,14 @@ declare -a packages=(
     "Paralax.CQRS.EventSourcing"
     "Paralax.CQRS.Queries"
     "Paralax.CQRS.Logging"
-    "Paralax.CQRS.WebApi"
     "Paralax.Discovery.Consul"
     "Paralax.Docs.Scalar"
     "Paralax.Docs.Swagger"
     "Paralax.gRPC"
     "Paralax.gRPC.Protobuf"
     "Paralax.HTTP"
+    "Paralax.Persistence.MongoDB"
+    "Paralax.Persistence.Redis"
     "Paralax.LoadBalancing.Fabio"
     "Paralax.Logging"
     "Paralax.MessageBrokers"
@@ -72,8 +73,6 @@ declare -a packages=(
     "Paralax.MessageBrokers.RabbitMQ"
     "Paralax.Metrics.AppMetrics"
     "Paralax.Metrics.Prometheus"
-    "Paralax.Persistence.MongoDB"
-    "Paralax.Persistence.Redis"
     "Paralax.Secrets.Vault"
     "Paralax.Security"
     "Paralax.Tracing.Jaeger"
@@ -82,6 +81,7 @@ declare -a packages=(
     "Paralax.WebApi.Scalar"
     "Paralax.WebApi.Security"
     "Paralax.WebApi.Swagger"
+    "Paralax.CQRS.WebApi"
 )
 
 # Iterate through the defined order of packages
