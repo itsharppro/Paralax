@@ -30,6 +30,7 @@ else
     CHANGED_FILES=$(git diff --name-only $GITHUB_SHA~1 $GITHUB_SHA)
 fi
 
+# Function to detect changed files in a directory
 directory_contains_changes() {
     local dir="$1"
     if $FORCE_PACK_ALL; then
@@ -43,13 +44,64 @@ directory_contains_changes() {
     return 1  # No changed files in the directory
 }
 
+# Function to parse .csproj and extract dependencies
+extract_dependencies() {
+    local project_file="$1"
+    grep -oP '(?<=<PackageReference Include=").+?(?=")' "$project_file"
+}
+
+# Dictionary to store the order of project builds
+declare -A project_build_order
+build_counter=0
+
+# Topological sort to determine the build order based on dependencies
+determine_build_order() {
+    local project_dir="$1"
+    local project_file="$project_dir/*.csproj"
+    
+    if [[ ! -f $project_file ]]; then
+        return
+    fi
+    
+    # Extract dependencies from the .csproj file
+    local dependencies=$(extract_dependencies "$project_file")
+    
+    # If the project has dependencies, process them first
+    for dependency in $dependencies; do
+        dependency_dir=$(find "$base_dir" -name "$dependency.csproj" -exec dirname {} \;)
+        if [[ -n "$dependency_dir" ]]; then
+            determine_build_order "$dependency_dir"
+        fi
+    done
+    
+    # Add project to the build order if it hasn't been added yet
+    if [[ -z "${project_build_order[$project_dir]}" ]]; then
+        project_build_order[$project_dir]=$build_counter
+        build_counter=$((build_counter + 1))
+    fi
+}
+
+# First, determine the build order of all projects based on dependencies
 echo "$divider"
-echo "Starting the process of packaging libraries"
+echo "Determining build order based on dependencies"
 echo "$divider"
 
 for dir in "$base_dir"/*/
 do
     dir=${dir%*/}
+    determine_build_order "$dir"
+done
+
+# Sort the projects by their determined build order
+sorted_projects=$(for dir in "${!project_build_order[@]}"; do echo "${project_build_order[$dir]}:$dir"; done | sort -n | cut -d':' -f2)
+
+echo "$divider"
+echo "Starting the process of packaging libraries in the correct order"
+echo "$divider"
+
+# Now, process the projects in the correct order
+for dir in $sorted_projects
+do
     package_name=${dir##*/}
     script_path="$dir/scripts/build-and-pack.sh"
     
