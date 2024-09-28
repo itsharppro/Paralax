@@ -31,7 +31,6 @@ if [ "$FORCE_BUILD_TEST" = false ]; then
     fi
   done
 
-  # If no libraries were detected, process all libraries
   if [ ${#LIBRARIES[@]} -eq 0 ]; then
     echo "No changed libraries detected, processing all."
     LIBRARIES=($(find src/* -maxdepth 0 -type d -exec basename {} \;))
