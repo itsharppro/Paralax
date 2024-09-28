@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -27,7 +27,7 @@
     <PackageReference Include="App.Metrics.Reporting.Console" Version="4.3.0" />
     <PackageReference Include="App.Metrics.Reporting.Http" Version="4.3.0" />
     <PackageReference Include="App.Metrics.Reporting.InfluxDB" Version="4.3.0" />
-    <PackageReference Include="Paralax" Version="1.0.169" />
+    <PackageReference Include="Paralax" Version="*" />
   </ItemGroup>
 
 </Project>

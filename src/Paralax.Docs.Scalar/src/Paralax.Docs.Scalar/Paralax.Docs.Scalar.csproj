@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0-rc.1.24452.1" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.21" />
-    <PackageReference Include="Paralax" Version="1.0.104" />
+    <PackageReference Include="Paralax" Version="*" />
     <PackageReference Include="Scalar.AspNetCore" Version="1.2.3" />
   </ItemGroup>
 
