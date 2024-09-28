@@ -3,7 +3,6 @@
 base_dir="src"
 divider="----------------------------------------"
 
-# Get the latest commit message
 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
 
 # Check if the commit message contains [pack-all-force]
@@ -16,102 +15,41 @@ else
     FORCE_PACK_ALL=false
 fi
 
-# Fetch the full history to ensure commit comparison works (if shallow clone)
-git fetch --prune --unshallow || git fetch --prune
-
-# Detect changes between commits (only relevant if not forcing pack-all)
-if ! $FORCE_PACK_ALL; then
+if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_BASE_REF" == "main" ]]; then
     echo "$divider"
-    echo "Detecting changed files..."
+    echo "Pull request detected targeting the main branch."
+    echo "Comparing changes between the 'dev' and 'main' branches..."
     echo "$divider"
 
-    # Use the current commit if GITHUB_SHA is missing
-    if [ -z "$GITHUB_SHA" ]; then
-        GITHUB_SHA=$(git rev-parse HEAD)
-    fi
-
-    # Compare changes in the last commit
-    CHANGED_FILES=$(git diff --name-only "$GITHUB_SHA~1" "$GITHUB_SHA")
-    if [[ -z "$CHANGED_FILES" ]]; then
-        echo "No changes detected."
-        exit 0
-    fi
+    CHANGED_FILES=$(git diff --name-only origin/main origin/dev)
+else
+    echo "$divider"
+    echo "No pull request detected or not targeting main. Checking commit differences."
+    echo "$divider"
+    # Get the list of files that were changed in the last commit
+    CHANGED_FILES=$(git diff --name-only $GITHUB_SHA~1 $GITHUB_SHA)
 fi
 
-# Function to detect if a directory contains any changes
 directory_contains_changes() {
     local dir="$1"
     if $FORCE_PACK_ALL; then
-        return 0  # Force packaging of all directories
+        return 0 
     fi
     for file in $CHANGED_FILES; do
         if [[ "$file" == "$dir"* ]]; then
-            return 0  # Directory contains changes
+            return 0  
         fi
     done
-    return 1  # No changes detected
+    return 1  # No changed files in the directory
 }
 
-# Function to get project dependencies from .csproj using 'dotnet list package'
-get_dependencies() {
-    local project_file="$1"
-    if [ -f "$project_file" ]; then
-        dotnet list "$project_file" package --include-transitive | grep -oP '(?<=> ).+?(?= )'
-    fi
-}
-
-# Dictionary to store project build orders
-declare -A project_build_order
-build_counter=0
-
-# Resolve build order for dependencies using a topological-like sorting method
-resolve_build_order() {
-    local project_dir="$1"
-    local project_file="$project_dir/*.csproj"
-    
-    if [[ ! -f $project_file ]]; then
-        return
-    fi
-    
-    # Get project dependencies
-    local dependencies=$(get_dependencies "$project_file")
-    
-    # Recursively process dependencies
-    for dependency in $dependencies; do
-        dependency_dir=$(find "$base_dir" -name "$dependency.csproj" -exec dirname {} \;)
-        if [[ -n "$dependency_dir" ]]; then
-            resolve_build_order "$dependency_dir"
-        fi
-    done
-    
-    # Add the current project to the build order if not already added
-    if [[ -z "${project_build_order[$project_dir]}" ]]; then
-        project_build_order[$project_dir]=$build_counter
-        build_counter=$((build_counter + 1))
-    fi
-}
-
-# Determine build order based on project dependencies
 echo "$divider"
-echo "Determining build order based on dependencies"
+echo "Starting the process of packaging libraries"
 echo "$divider"
 
 for dir in "$base_dir"/*/
 do
     dir=${dir%*/}
-    resolve_build_order "$dir"
-done
-
-# Sort projects by their build order
-sorted_projects=$(for dir in "${!project_build_order[@]}"; do echo "${project_build_order[$dir]}:$dir"; done | sort -n | cut -d':' -f2)
-
-echo "$divider"
-echo "Starting the process of packaging libraries in the correct order"
-echo "$divider"
-
-# Process projects in the correct order
-for dir in $sorted_projects
-do
     package_name=${dir##*/}
     script_path="$dir/scripts/build-and-pack.sh"
     
