@@ -16,28 +16,28 @@ else
     FORCE_PACK_ALL=false
 fi
 
-# Check for pull request to main or else detect changes
-if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_BASE_REF" == "main" ]]; then
-    echo "$divider"
-    echo "Pull request detected targeting the main branch."
-    echo "Comparing changes between the 'dev' and 'main' branches..."
-    echo "$divider"
+# # Check for pull request to main or else detect changes
+# if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_BASE_REF" == "main" ]]; then
+#     echo "$divider"
+#     echo "Pull request detected targeting the main branch."
+#     echo "Comparing changes between the 'dev' and 'main' branches..."
+#     echo "$divider"
 
-    # Compare changes between 'dev' and 'main'
-    CHANGED_FILES=$(git diff --name-only origin/main origin/dev)
-else
-    echo "$divider"
-    echo "No pull request detected or not targeting main. Checking commit differences."
-    echo "$divider"
+#     # Compare changes between 'dev' and 'main'
+#     CHANGED_FILES=$(git diff --name-only origin/main origin/dev)
+# else
+#     echo "$divider"
+#     echo "No pull request detected or not targeting main. Checking commit differences."
+#     echo "$divider"
 
-    # Use the current commit if SHA is missing
-    if [ -z "$GITHUB_SHA" ]; then
-        GITHUB_SHA=$(git rev-parse HEAD)
-    fi
+#     # Use the current commit if SHA is missing
+#     if [ -z "$GITHUB_SHA" ]; then
+#         GITHUB_SHA=$(git rev-parse HEAD)
+#     fi
 
-    # Check for changed files in the last commit
-    CHANGED_FILES=$(git diff --name-only "$GITHUB_SHA~1" "$GITHUB_SHA" || echo "")
-fi
+#     # Check for changed files in the last commit
+#     CHANGED_FILES=$(git diff --name-only "$GITHUB_SHA~1" "$GITHUB_SHA" || echo "")
+# fi
 
 # Function to detect if a directory contains any changes
 directory_contains_changes() {
