@@ -20,7 +20,6 @@ if [ "$FORCE_BUILD_TEST" = false ]; then
 
   LIBRARIES=()
 
-  # Loop through changed files and detect changed libraries
   for file in $CHANGED_FILES; do
     if [[ "$file" == *".csproj" ]]; then
       LIBRARY=$(dirname "$file" | cut -d'/' -f3)
