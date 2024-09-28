@@ -36,5 +36,8 @@ namespace Paralax.Persistence.MongoDB
 
         public IMongoQueryable<TEntity> AsQueryable()
             => _collection.AsQueryable();
+
+        public IMongoCollection<TEntity> AsCollection()
+            => _collection; 
     }
 }
