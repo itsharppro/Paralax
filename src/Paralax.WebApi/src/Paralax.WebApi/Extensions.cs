@@ -103,7 +103,7 @@ namespace Paralax.WebApi
 
             if (builder.Services.All(s => s.ServiceType != typeof(IExceptionToResponseMapper)))
             {
-                builder.Services.AddTransient<IExceptionToResponseMapper>();
+                builder.Services.AddTransient<IExceptionToResponseMapper, EmptyExceptionToResponseMapper>();
             }
 
             return builder;
@@ -286,5 +286,10 @@ namespace Paralax.WebApi
             => request.Query.Any();
 
         private static bool HasRouteData(this HttpRequest request) => request.HttpContext.GetRouteData().Values.Any();
+
+        private class EmptyExceptionToResponseMapper : IExceptionToResponseMapper
+        {
+            public ExceptionResponse Map(Exception exception) => null;
+        }
     }
 }
