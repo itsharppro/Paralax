@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
 namespace Paralax.Persistence.MongoDB
@@ -12,5 +13,6 @@ namespace Paralax.Persistence.MongoDB
         Task DeleteAsync(Expression<Func<TEntity, bool>> predicate);
         Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate);
         IMongoQueryable<TEntity> AsQueryable();
+        IMongoCollection<TEntity> AsCollection();
     }
 }
