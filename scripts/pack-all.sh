@@ -56,6 +56,7 @@ declare -a packages=(
     "Paralax.gRPC.Protobuf"
     "Paralax.gRPC"
     "Paralax.Security"
+    "Paralax.HTTP"
     "Paralax.Auth.Distributed"
 
     "Paralax.CQRS.Commands"
@@ -66,9 +67,8 @@ declare -a packages=(
     "Paralax.Discovery.Consul"
     "Paralax.Docs.Scalar"
     "Paralax.Docs.Swagger"
-    "Paralax.gRPC"
     
-    "Paralax.HTTP"
+    
     "Paralax.Persistence.MongoDB"
     "Paralax.Persistence.Redis"
     "Paralax.LoadBalancing.Fabio"
