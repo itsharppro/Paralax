@@ -20,16 +20,15 @@ if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_BASE_REF" == "main" ]];
     echo "Pull request detected targeting the main branch."
     echo "Comparing changes between the 'dev' and 'main' branches..."
     echo "$divider"
-
     CHANGED_FILES=$(git diff --name-only origin/main origin/dev)
 else
     echo "$divider"
     echo "No pull request detected or not targeting main. Checking commit differences."
     echo "$divider"
-    # Get the list of files that were changed in the last commit
     CHANGED_FILES=$(git diff --name-only $GITHUB_SHA~1 $GITHUB_SHA)
 fi
 
+# Function to check if the directory contains changes
 directory_contains_changes() {
     local dir="$1"
     if $FORCE_PACK_ALL; then
@@ -47,48 +46,85 @@ echo "$divider"
 echo "Starting the process of packaging libraries"
 echo "$divider"
 
-for dir in "$base_dir"/*/
-do
-    dir=${dir%*/}
-    package_name=${dir##*/}
+# Define the processing order
+declare -a packages=(
+    "Paralax"
+    "Paralax.Auth"
+    "Paralax.Auth.Distributed"
+    "Paralax.CQRS.Commands"
+    "Paralax.CQRS.Events"
+    "Paralax.CQRS.EventSourcing"
+    "Paralax.CQRS.Logging"
+    "Paralax.CQRS.Queries"
+    "Paralax.CQRS.WebApi"
+    "Paralax.Discovery.Consul"
+    "Paralax.Docs.Scalar"
+    "Paralax.Docs.Swagger"
+    "Paralax.gRPC"
+    "Paralax.gRPC.Protobuf"
+    "Paralax.HTTP"
+    "Paralax.LoadBalancing.Fabio"
+    "Paralax.Logging"
+    "Paralax.MessageBrokers"
+    "Paralax.MessageBrokers.CQRS"
+    "Paralax.MessageBrokers.Outbox"
+    "Paralax.MessageBrokers.Outbox.Mongo"
+    "Paralax.MessageBrokers.RabbitMQ"
+    "Paralax.Metrics.AppMetrics"
+    "Paralax.Metrics.Prometheus"
+    "Paralax.Persistence.MongoDB"
+    "Paralax.Persistence.Redis"
+    "Paralax.Secrets.Vault"
+    "Paralax.Security"
+    "Paralax.Tracing.Jaeger"
+    "Paralax.Tracing.Jaeger.RabbitMQ"
+    "Paralax.WebApi"
+    "Paralax.WebApi.Scalar"
+    "Paralax.WebApi.Security"
+    "Paralax.WebApi.Swagger"
+)
+
+# Iterate through the defined order of packages
+for package in "${packages[@]}"; do
+    dir="$base_dir/$package"
     script_path="$dir/scripts/build-and-pack.sh"
-    
+
     echo "$divider"
-    echo "Checking package: $package_name"
+    echo "Checking package: $package"
     echo "$divider"
-    
+
     if directory_contains_changes "$dir"; then
-        echo "Processing package: $package_name"
+        echo "Processing package: $package"
         echo "$divider"
 
         if [ -f "$script_path" ]; then
-            echo "Found packaging script for: $package_name"
+            echo "Found packaging script for: $package"
             echo "$divider"
 
             chmod +x "$script_path"
 
-            echo "Executing packaging script for: $package_name"
+            echo "Executing packaging script for: $package"
             echo "$divider"
             "$script_path"
 
             if [ $? -ne 0 ]; then
                 echo "$divider"
-                echo "Error: Packaging failed for $package_name"
+                echo "Error: Packaging failed for $package"
                 echo "$divider"
                 exit 1
             fi
 
             echo "$divider"
-            echo "Successfully packed and published: $package_name"
+            echo "Successfully packed and published: $package"
             echo "$divider"
         else
             echo "$divider"
-            echo "Warning: No packaging script found for $package_name"
+            echo "Warning: No packaging script found for $package"
             echo "$divider"
         fi
     else
         echo "$divider"
-        echo "Skipping package: $package_name (no changes detected)"
+        echo "Skipping package: $package (no changes detected)"
         echo "$divider"
     fi
 done
