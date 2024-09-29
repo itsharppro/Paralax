@@ -124,7 +124,6 @@ declare -a packages=(
     "Paralax.CQRS.WebApi"
 )
 
-# Iterate through the defined order of packages
 for package in "${packages[@]}"; do
     dir="$base_dir/$package"
     script_path="$dir/scripts/build-and-pack.sh"
