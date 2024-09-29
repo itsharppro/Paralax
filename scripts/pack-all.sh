@@ -4,10 +4,6 @@ base_dir="src"
 divider="----------------------------------------"
 
 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-PACKAGE_VERSION="1.0.$GITHUB_RUN_NUMBER" # Set the new package version using the GitHub run number
-NUGET_API_URL="https://api.nuget.org/v3-flatcontainer"
-SLEEP_DURATION=10  # How long to wait between checks
-MAX_ATTEMPTS=30    # Maximum number of attempts to wait for the package
 
 # Check if the commit message contains [pack-all-force]
 if [[ "$COMMIT_MESSAGE" == *"[pack-all-force]"* ]]; then
@@ -46,42 +42,6 @@ directory_contains_changes() {
     return 1  # No changed files in the directory
 }
 
-# Function to check if the package version is available in NuGet
-wait_for_package_availability() {
-    local package_name="$1"
-    local version="$2"
-    local attempts=0
-    local package_metadata_url="$NUGET_API_URL/$package_name/index.json"
-    local package_url="$NUGET_API_URL/$package_name/$version/$package_name.$version.nupkg"
-
-    echo "$divider"
-    echo "Waiting for $package_name version $version to become available on NuGet..."
-    echo "$divider"
-
-    while [[ $attempts -lt $MAX_ATTEMPTS ]]; do
-        # First, check if the metadata is available on NuGet (this gives us all the versions)
-        if curl -s -f "$package_metadata_url" | grep -q "\"$version\""; then
-            # Now, check if the specific package version is available for download
-            if curl -s -f "$package_url" > /dev/null; then
-                echo "$divider"
-                echo "$package_name version $version is available on NuGet."
-                echo "$divider"
-                return 0
-            fi
-        fi
-
-        echo "Attempt $((attempts + 1))/$MAX_ATTEMPTS: $package_name version $version not yet available."
-        echo "Waiting for $SLEEP_DURATION seconds..."
-        sleep $SLEEP_DURATION
-        attempts=$((attempts + 1))
-    done
-
-    echo "$divider"
-    echo "Error: $package_name version $version did not become available on NuGet after $MAX_ATTEMPTS attempts."
-    echo "$divider"
-    return 1
-}
-
 echo "$divider"
 echo "Starting the process of packaging libraries"
 echo "$divider"
@@ -108,6 +68,7 @@ declare -a packages=(
     "Paralax.Docs.Scalar"
     "Paralax.Docs.Swagger"
     
+    
     "Paralax.Persistence.MongoDB"
     "Paralax.Persistence.Redis"
     "Paralax.LoadBalancing.Fabio"
@@ -129,6 +90,7 @@ declare -a packages=(
     "Paralax.CQRS.WebApi"
 )
 
+# Iterate through the defined order of packages
 for package in "${packages[@]}"; do
     dir="$base_dir/$package"
     script_path="$dir/scripts/build-and-pack.sh"
@@ -146,16 +108,6 @@ for package in "${packages[@]}"; do
             echo "$divider"
 
             chmod +x "$script_path"
-
-            # Wait for the package dependency to become available on NuGet
-            if [[ "$package" == Paralax.* ]]; then
-                if ! wait_for_package_availability "$package" "$PACKAGE_VERSION"; then
-                    echo "$divider"
-                    echo "Error: $package version $PACKAGE_VERSION is not available on NuGet."
-                    echo "$divider"
-                    exit 1
-                fi
-            fi
 
             echo "Executing packaging script for: $package"
             echo "$divider"
