@@ -26,14 +26,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md">
+    <None Include="../../../../README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
 
     <None Include="../../../../docs/logo/Paralax_logo_128.png">
       <Pack>True</Pack>
-      <PackagePath>Paralax_logo_128.png</PackagePath>
+      <PackagePath>\</PackagePath>
     </None>
 
     <PackageReference Include="Figgle" Version="0.5.1" />
