@@ -12,6 +12,9 @@ PACKAGE_VERSION="1.0.$GITHUB_RUN_NUMBER"
 echo "Building and packing the Paralax.HTTP library..."
 dotnet pack -c release /p:PackageVersion=$PACKAGE_VERSION --no-restore -o ./nupkg
 
+echo "Listing files in the ./nupkg directory after packaging:"
+ls -lh ./nupkg
+
 PACKAGE_PATH="./nupkg/Paralax.HTTP.$PACKAGE_VERSION.nupkg"
 
 if [ -f "$PACKAGE_PATH" ]; then
