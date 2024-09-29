@@ -13,23 +13,14 @@
       Initial release of the Paralax framework for building scalable services.
     </PackageReleaseNotes>
     <Copyright>ITSharpPro © $(Year)</Copyright>
-    
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    
     <PackageId>Paralax</PackageId>
     <PackageIcon>Paralax_logo.png</PackageIcon>
     <PackageIconUrl>https://github.com/itsharppro/Paralax/blob/main/docs/logo/Paralax_logo.png</PackageIconUrl>
-    <RepositoryCommit>$(GITHUB_SHA)</RepositoryCommit>
-    <RepositoryBranch>$(GITHUB_REF)</RepositoryBranch>
-    
-    <Deterministic>true</Deterministic>
-    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <IsPackable>true</IsPackable> <!-- Enable packaging -->
   </PropertyGroup>
 
 
