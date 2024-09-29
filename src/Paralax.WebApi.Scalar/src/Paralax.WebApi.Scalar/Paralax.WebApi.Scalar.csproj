@@ -1,13 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Paralax.WebApi.Scalar - Integration of Scalar documentation for Web APIs in the Paralax framework</Description>
+    <Authors>ITSharpPro</Authors>
+    <Company>ITSharpPro</Company>
+    <PackageProjectUrl>https://itsharppro.com</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ITSharpPro/Paralax</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>microservices; WebAPI; Scalar; documentation; ITSharpPro</PackageTags>
+    <PackageReleaseNotes>
+      Initial release of Paralax.WebApi.Scalar for integrating Scalar documentation in Web APIs.
+    </PackageReleaseNotes>
+    <Copyright>ITSharpPro © $(Year)</Copyright>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+   
+    <PackageId>Paralax.WebApi.Scalar</PackageId>
+    <PackageIcon>Paralax_logo_128.png</PackageIcon> 
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
 
   <ItemGroup>
+    <None Include="../../../../README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
+    <None Include="../../../../docs/logo/Paralax_logo_128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
     <PackageReference Include="AspNetCore.Scalar" Version="1.1.6" />
     <PackageReference Include="Paralax" Version="*" />
     <PackageReference Include="Paralax.Docs.Scalar" Version="*" />

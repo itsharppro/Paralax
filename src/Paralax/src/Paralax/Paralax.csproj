@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <Description>Paralax - framework for microservices architecture</Description>
+   
+   <PropertyGroup>
+    <Description>Paralax - A framework for building microservices architecture</Description>
     <Authors>ITSharpPro</Authors>
     <Company>ITSharpPro</Company>
     <PackageProjectUrl>https://itsharppro.com</PackageProjectUrl>
@@ -10,50 +11,39 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>microservices; architecture; framework; ITSharpPro</PackageTags>
     <PackageReleaseNotes>
-      Initial release of the Paralax framework for building microservices.
+      Initial release of the Paralax framework for building scalable services.
     </PackageReleaseNotes>
     <Copyright>ITSharpPro © $(Year)</Copyright>
-    
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-
-    <Version>1.0.$(GitHubRunNumber)</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.$(GitHubRunNumber)-beta</InformationalVersion>
-    
-    <PackageId>Paralax.Framework</PackageId>
-    <PackageIcon>icon.png</PackageIcon>
-    <PackageIconUrl>https://github.com/ITSharpPro/Paralax/icon.png</PackageIconUrl>
-    <RepositoryCommit>$(GITHUB_SHA)</RepositoryCommit>
-    <RepositoryBranch>$(GITHUB_REF)</RepositoryBranch>
-    
-    <Deterministic>true</Deterministic>
-    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+   
+    <PackageId>Paralax</PackageId>
+    <PackageIcon>Paralax_logo_128.png</PackageIcon> 
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
-  <!-- Package Dependencies -->
   <ItemGroup>
-    <None Include="README.md">
+    <None Include="../../../../README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
 
-    <!-- Package References -->
+    <None Include="../../../../docs/logo/Paralax_logo_128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
     <PackageReference Include="Figgle" Version="0.5.1" />
     <PackageReference Include="Figletize" Version="0.7.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.8" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
     <PackageReference Include="Scrutor" Version="4.2.2" />
   </ItemGroup>
 
-  <!-- File to Pack in the NuGet Package -->
-  <ItemGroup>
-    <None Update="README.md">
+</Project>

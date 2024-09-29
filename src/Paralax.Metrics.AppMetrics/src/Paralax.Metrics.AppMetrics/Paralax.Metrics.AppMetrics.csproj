@@ -1,12 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Paralax.Metrics.AppMetrics - Integration with App Metrics for monitoring in microservices architecture</Description>
+    <Authors>ITSharpPro</Authors>
+    <Company>ITSharpPro</Company>
+    <PackageProjectUrl>https://itsharppro.com</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ITSharpPro/Paralax</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>microservices; metrics; monitoring; AppMetrics; ITSharpPro</PackageTags>
+    <PackageReleaseNotes>
+      Initial release of Paralax.Metrics.AppMetrics for integrating App Metrics in microservices.
+    </PackageReleaseNotes>
+    <Copyright>ITSharpPro © $(Year)</Copyright>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+   
+    <PackageId>Paralax.Metrics.AppMetrics</PackageId>
+    <PackageIcon>Paralax_logo_128.png</PackageIcon> 
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../../../../README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
+    <None Include="../../../../docs/logo/Paralax_logo_128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
     <PackageReference Include="App.Metrics.AspNetCore" Version="4.3.0" />
     <PackageReference Include="App.Metrics.AspNetCore.Core" Version="4.3.0" />
     <PackageReference Include="App.Metrics.AspNetCore.Endpoints" Version="4.3.0" />

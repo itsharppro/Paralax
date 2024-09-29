@@ -1,12 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Paralax.Persistence.MongoDB - Integration with MongoDB for persistence in microservices architecture</Description>
+    <Authors>ITSharpPro</Authors>
+    <Company>ITSharpPro</Company>
+    <PackageProjectUrl>https://itsharppro.com</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ITSharpPro/Paralax</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>microservices; persistence; MongoDB; ITSharpPro</PackageTags>
+    <PackageReleaseNotes>
+      Initial release of Paralax.Persistence.MongoDB for integrating MongoDB in microservices.
+    </PackageReleaseNotes>
+    <Copyright>ITSharpPro © $(Year)</Copyright>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+   
+    <PackageId>Paralax.Persistence.MongoDB</PackageId>
+    <PackageIcon>Paralax_logo_128.png</PackageIcon> 
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../../../../README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
+    <None Include="../../../../docs/logo/Paralax_logo_128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
     <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
     <PackageReference Include="Paralax" Version="*" />
     <PackageReference Include="Paralax.CQRS.Queries" Version="*" />

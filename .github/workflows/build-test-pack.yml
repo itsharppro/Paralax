@@ -42,7 +42,7 @@ jobs:
         path: src/*/TestResults/
 
   publish:
-    if: github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/main'
     needs: build_test
     runs-on: ubuntu-latest
 

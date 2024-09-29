@@ -1,12 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Description>Paralax.Tracing.Jaeger.RabbitMQ - Integration of Jaeger tracing with RabbitMQ in microservices architecture</Description>
+    <Authors>ITSharpPro</Authors>
+    <Company>ITSharpPro</Company>
+    <PackageProjectUrl>https://itsharppro.com</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ITSharpPro/Paralax</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>microservices; tracing; jaeger; RabbitMQ; ITSharpPro</PackageTags>
+    <PackageReleaseNotes>
+      Initial release of Paralax.Tracing.Jaeger.RabbitMQ for integrating Jaeger tracing with RabbitMQ in microservices.
+    </PackageReleaseNotes>
+    <Copyright>ITSharpPro © $(Year)</Copyright>
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+   
+    <PackageId>Paralax.Tracing.Jaeger.RabbitMQ</PackageId>
+    <PackageIcon>Paralax_logo_128.png</PackageIcon> 
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../../../../README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
+    <None Include="../../../../docs/logo/Paralax_logo_128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
     <ProjectReference Include="../../../Paralax.MessageBrokers.RabbitMQ/src/Paralax.MessageBrokers.RabbitMQ/Paralax.MessageBrokers.RabbitMQ.csproj" />
     <ProjectReference Include="../../../Paralax.Tracing.Jaeger/src/Paralax.Tracing.Jaeger/Paralax.Tracing.Jaeger.csproj" />
   </ItemGroup>
