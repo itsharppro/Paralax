@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
+using MessagePack;
 
 namespace Paralax.CQRS.Queries
 {
@@ -17,7 +17,6 @@ namespace Paralax.CQRS.Queries
             Items = Enumerable.Empty<T>();
         }
 
-        [JsonConstructor]
         protected PagedResult(IEnumerable<T> items,
             int currentPage, int resultsPerPage,
             int totalPages, long totalResults)

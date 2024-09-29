@@ -9,7 +9,6 @@ on:
       - '**'
 
 jobs:
-  # Identify changed libraries and run the build and tests
   build_test:
     runs-on: ubuntu-latest
 
@@ -17,7 +16,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        fetch-depth: 100  # Fetch two commits for proper diff
+        fetch-depth: 100  
 
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
@@ -31,7 +30,7 @@ jobs:
 
     - name: Build and test libraries
       env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}  # Use the secret token for Codecov
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} 
       run: |
         chmod +x ./scripts/build-and-test.sh
         ./scripts/build-and-test.sh

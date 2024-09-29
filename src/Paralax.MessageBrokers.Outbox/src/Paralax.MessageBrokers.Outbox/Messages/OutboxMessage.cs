@@ -34,10 +34,10 @@ namespace Paralax.MessageBrokers.Outbox.Messages
         public object MessageContext { get; set; }
 
         // Serialized version of the message for persistence or transport
-        public string SerializedMessage { get; set; }
+        public byte[] SerializedMessage { get; set; }
 
         // Serialized version of the message context for persistence or transport
-        public string SerializedMessageContext { get; set; }
+        public byte[] SerializedMessageContext { get; set; }
 
         // The time when the message was added to the outbox and is ready to be sent
         public DateTime SentAt { get; set; }

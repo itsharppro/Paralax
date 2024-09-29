@@ -6,7 +6,7 @@ using Paralax.MessageBrokers.Outbox;
 using Paralax.MessageBrokers.Outbox.Messages;
 using Paralax.Types; 
 
-namespace Convey.MessageBrokers.Outbox.Paralax.Internals
+namespace Paralax.MessageBrokers.Outbox.Mongo.Core
 {
     internal sealed class MongoOutboxInitializer : IInitializer
     {

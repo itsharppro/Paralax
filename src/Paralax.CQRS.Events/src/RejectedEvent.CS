@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Paralax.CQRS.Events
 {
     public class RejectedEvent : IRejectedEvent
@@ -7,7 +5,6 @@ namespace Paralax.CQRS.Events
         public string Reason { get; }
         public string Code { get; }
 
-        [JsonConstructor]
         public RejectedEvent(string reason, string code)
         {
             Reason = reason;
