@@ -51,24 +51,29 @@ wait_for_package_availability() {
     local package_name="$1"
     local version="$2"
     local attempts=0
+    local package_metadata_url="$NUGET_API_URL/$package_name/index.json"
+    local package_url="$NUGET_API_URL/$package_name/$version/$package_name.$version.nupkg"
 
     echo "$divider"
     echo "Waiting for $package_name version $version to become available on NuGet..."
     echo "$divider"
 
     while [[ $attempts -lt $MAX_ATTEMPTS ]]; do
-        # Check if the package version is available in NuGet
-        if curl -s -f "$NUGET_API_URL/$package_name/$version/$package_name.$version.nupkg" > /dev/null; then
-            echo "$divider"
-            echo "$package_name version $version is available on NuGet."
-            echo "$divider"
-            return 0
-        else
-            echo "Attempt $((attempts + 1))/$MAX_ATTEMPTS: $package_name version $version not yet available."
-            echo "Waiting for $SLEEP_DURATION seconds..."
-            sleep $SLEEP_DURATION
-            attempts=$((attempts + 1))
+        # First, check if the metadata is available on NuGet (this gives us all the versions)
+        if curl -s -f "$package_metadata_url" | grep -q "\"$version\""; then
+            # Now, check if the specific package version is available for download
+            if curl -s -f "$package_url" > /dev/null; then
+                echo "$divider"
+                echo "$package_name version $version is available on NuGet."
+                echo "$divider"
+                return 0
+            fi
         fi
+
+        echo "Attempt $((attempts + 1))/$MAX_ATTEMPTS: $package_name version $version not yet available."
+        echo "Waiting for $SLEEP_DURATION seconds..."
+        sleep $SLEEP_DURATION
+        attempts=$((attempts + 1))
     done
 
     echo "$divider"
