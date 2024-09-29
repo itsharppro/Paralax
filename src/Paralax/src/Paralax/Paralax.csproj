@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  
   <PropertyGroup>
-    <Description>Paralax - framework for microservices architecture</Description>
+    <Description>Paralax - framework stack for scalable architecture</Description>
     <Authors>ITSharpPro</Authors>
     <Company>ITSharpPro</Company>
     <PackageProjectUrl>https://itsharppro.com</PackageProjectUrl>
@@ -10,12 +10,12 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>microservices; architecture; framework; ITSharpPro</PackageTags>
     <PackageReleaseNotes>
-      Initial release of the Paralax framework for building microservices.
+      Initial release of the Paralax framework for building scalable services.
     </PackageReleaseNotes>
     <Copyright>ITSharpPro © $(Year)</Copyright>
     
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-
+    
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -32,17 +32,13 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
-  <!-- Package Dependencies -->
   <ItemGroup>
-    <None Include="README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
-    <!-- Package References -->
+  <ItemGroup>
     <PackageReference Include="Figgle" Version="0.5.1" />
     <PackageReference Include="Figletize" Version="0.7.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.8" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
