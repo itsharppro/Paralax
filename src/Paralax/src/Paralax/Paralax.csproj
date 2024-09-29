@@ -29,6 +29,13 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+
+     <None Include="docs/logo/Paralax_logo.png">
+      <Pack>True</Pack>
+      <PackagePath>icons/</PackagePath>
+    </None>
+
+
     <PackageReference Include="Figgle" Version="0.5.1" />
     <PackageReference Include="Figletize" Version="0.7.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.8" />
