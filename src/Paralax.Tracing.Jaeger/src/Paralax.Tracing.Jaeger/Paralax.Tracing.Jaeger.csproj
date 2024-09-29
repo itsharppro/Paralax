@@ -19,24 +19,26 @@
     <LangVersion>latest</LangVersion>
    
     <PackageId>Paralax.Tracing.Jaeger</PackageId>
-    <PackageIconUrl>https://github.com/itsharppro/Paralax/blob/main/docs/logo/Paralax_logo.png</PackageIconUrl>
+    <PackageIcon>Paralax_logo_128.png</PackageIcon> 
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../../../../README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
+    <None Include="../../../../docs/logo/Paralax_logo_128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
     <PackageReference Include="Jaeger" Version="1.0.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
-    <!-- <PackageReference Include="OpenTelemetry" Version="1.9.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.5.1" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.3.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" /> -->
     <PackageReference Include="OpenTracing.Contrib.NetCore" Version="0.9.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
-
-    <!-- <PackageReference Include="OpenTracing.Contrib.NetCore" Version="0.9.0" /> -->
     <PackageReference Include="Paralax" Version="*" />
   </ItemGroup>
 

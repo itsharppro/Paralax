@@ -19,12 +19,22 @@
     <LangVersion>latest</LangVersion>
 
     <PackageId>Paralax.CQRS.WebApi</PackageId>
-    <PackageIconUrl>https://github.com/itsharppro/Paralax/blob/main/docs/logo/Paralax_logo.png</PackageIconUrl>
+    <PackageIcon>Paralax_logo_128.png</PackageIcon> 
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../../../../README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
+    <None Include="../../../../docs/logo/Paralax_logo_128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+
     <PackageReference Include="NetJSON" Version="1.4.4" />
     <PackageReference Include="Paralax.CQRS.Commands" Version="*" />
     <PackageReference Include="Paralax.CQRS.Events" Version="*" />
