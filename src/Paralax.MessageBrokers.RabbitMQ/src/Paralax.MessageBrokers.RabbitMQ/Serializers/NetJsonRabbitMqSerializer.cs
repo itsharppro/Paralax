@@ -1,5 +1,6 @@
 using System;
 using NetJSON;
+using System.Text;
 
 namespace Paralax.MessageBrokers.RabbitMQ.Serializers
 {
@@ -10,9 +11,6 @@ namespace Paralax.MessageBrokers.RabbitMQ.Serializers
             NetJSON.NetJSON.IncludeTypeInformation = false;
             NetJSON.NetJSON.CaseSensitive = false;
             NetJSON.NetJSON.UseEnumString = true;
-            
-
-            // Note: No CamelCase property in NetJSON???
         }
 
         public ReadOnlySpan<byte> Serialize(object value)
@@ -22,7 +20,7 @@ namespace Paralax.MessageBrokers.RabbitMQ.Serializers
 
             var jsonString = NetJSON.NetJSON.Serialize(value);
 
-            return System.Text.Encoding.UTF8.GetBytes(jsonString);
+            return Encoding.UTF8.GetBytes(jsonString);
         }
 
         public object Deserialize(ReadOnlySpan<byte> value, Type type)
@@ -30,12 +28,9 @@ namespace Paralax.MessageBrokers.RabbitMQ.Serializers
             if (value.IsEmpty)
                 throw new ArgumentException("Value cannot be empty.", nameof(value));
 
-            var jsonString = System.Text.Encoding.UTF8.GetString(value);
+            var jsonString = Encoding.UTF8.GetString(value);
 
-            var method = typeof(NetJSON.NetJSON).GetMethod("Deserialize", new[] { typeof(string) });
-            var genericMethod = method.MakeGenericMethod(type);
-            
-            return genericMethod.Invoke(null, new object[] { jsonString });
+            return NetJSON.NetJSON.Deserialize(type, jsonString);
         }
 
         public object Deserialize(ReadOnlySpan<byte> value)
@@ -43,7 +38,7 @@ namespace Paralax.MessageBrokers.RabbitMQ.Serializers
             if (value.IsEmpty)
                 throw new ArgumentException("Value cannot be empty.", nameof(value));
 
-            var jsonString = System.Text.Encoding.UTF8.GetString(value);
+            var jsonString = Encoding.UTF8.GetString(value);
 
             return NetJSON.NetJSON.Deserialize<object>(jsonString);
         }

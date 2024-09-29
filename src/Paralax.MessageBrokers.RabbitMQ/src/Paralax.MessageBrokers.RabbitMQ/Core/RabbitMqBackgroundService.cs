@@ -19,7 +19,6 @@ namespace Paralax.MessageBrokers.RabbitMQ.Internals
 {
     internal sealed class RabbitMqBackgroundService : BackgroundService
     {
-        // JSON serializer options
         private static readonly JsonSerializerOptions SerializerOptions = new()
         {
             PropertyNameCaseInsensitive = true,
