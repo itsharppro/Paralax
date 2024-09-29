@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-  
+
   <PropertyGroup>
-    <Description>Paralax - framework stack for scalable architecture</Description>
+    <Description>Paralax - A framework for building microservices architecture</Description>
     <Authors>ITSharpPro</Authors>
     <Company>ITSharpPro</Company>
     <PackageProjectUrl>https://itsharppro.com</PackageProjectUrl>
@@ -15,11 +15,10 @@
     <Copyright>ITSharpPro © $(Year)</Copyright>
     
     <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-    
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-   
+    
     <PackageId>Paralax</PackageId>
     <PackageIcon>Paralax_logo.png</PackageIcon>
     <PackageIconUrl>https://github.com/itsharppro/Paralax/blob/main/docs/logo/Paralax_logo.png</PackageIconUrl>
@@ -30,11 +29,9 @@
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable> <!-- Enable packaging -->
   </PropertyGroup>
 
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Figgle" Version="0.5.1" />
