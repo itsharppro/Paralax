@@ -8,7 +8,6 @@
   [![Build Status](https://github.com/itsharppro/Paralax/actions/workflows/build-test-pack.yml/badge.svg)](https://github.com/itsharppro/Paralax/actions)
   [![NuGet Version](https://img.shields.io/nuget/v/Paralax.svg?style=flat)](https://www.nuget.org/packages/Paralax.Framework/)
   [![Coverage Status](https://codecov.io/gh/itsharppro/Paralax/graph/badge.svg?token=VKEPZNVTOF)](https://codecov.io/gh/itsharppro/Paralax)
-  [![License](https://img.shields.io/github/license/itsharppro/Paralax)](https://opensource.org/licenses/Apache-2.0)
 
 </div>
 
