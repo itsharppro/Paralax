@@ -1,5 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+   
    <PropertyGroup>
     <Description>Paralax - A framework for building microservices architecture</Description>
     <Authors>ITSharpPro</Authors>
@@ -17,8 +18,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+   
     <PackageId>Paralax</PackageId>
-    <PackageIcon>Paralax_logo.png</PackageIcon>
     <PackageIconUrl>https://github.com/itsharppro/Paralax/blob/main/docs/logo/Paralax_logo.png</PackageIconUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IsPackable>true</IsPackable>
@@ -29,12 +30,6 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-
-     <None Include="docs/logo/Paralax_logo.png">
-      <Pack>True</Pack>
-      <PackagePath>icons/</PackagePath>
-    </None>
-
 
     <PackageReference Include="Figgle" Version="0.5.1" />
     <PackageReference Include="Figletize" Version="0.7.0.3" />
