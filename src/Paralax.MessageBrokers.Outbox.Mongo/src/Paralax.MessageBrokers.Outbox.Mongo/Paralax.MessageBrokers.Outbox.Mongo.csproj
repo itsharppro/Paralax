@@ -7,10 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MessagePack" Version="2.5.172" />
     <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
     <PackageReference Include="Paralax" Version="*" />
-    <PackageReference Include="Paralax.MessageBrokers.Outbox" Version="*" />
+    <!-- <PackageReference Include="Paralax.MessageBrokers.Outbox" Version="*" /> -->
     <PackageReference Include="Paralax.Persistence.MongoDB" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../Paralax.MessageBrokers.Outbox/src/Paralax.MessageBrokers.Outbox/Paralax.MessageBrokers.Outbox.csproj" />
+    <ProjectReference Include="../../../Paralax.Persistence.MongoDBParalax.Persistence.MongoDB.csproj" />
   </ItemGroup>
 
 </Project>

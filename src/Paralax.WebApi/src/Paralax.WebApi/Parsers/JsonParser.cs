@@ -1,101 +1,79 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
-using Microsoft.Extensions.Configuration;
+using System.IO;
+using NetJSON;
 
 namespace Paralax.WebApi.Parsers
 {
-    // This JSON parser is based on the JsonConfigurationFileParser from Microsoft.Extensions.Configuration.Json library.
+    // This JSON parser uses the NetJSON library for serialization/deserialization.
     // It parses a JSON string into key-value pairs suitable for configuration or other dictionary-based representations.
     public class JsonParser
     {
         private readonly Dictionary<string, string> _data = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Stack<string> _stack = new();
 
         public IDictionary<string, string> Parse(string json)
         {
-            var jsonDocumentOptions = new JsonDocumentOptions
+            try
             {
-                CommentHandling = JsonCommentHandling.Skip,
-                AllowTrailingCommas = true
-            };
-
-            using (JsonDocument doc = JsonDocument.Parse(json, jsonDocumentOptions))
+                // Deserialize the JSON into a Dictionary<string, object>
+                var deserializedData = NetJSON.NetJSON.Deserialize<Dictionary<string, object>>(json);
+                ProcessDictionary(deserializedData, string.Empty);
+            }
+            catch (Exception ex)
             {
-                if (doc.RootElement.ValueKind != JsonValueKind.Object)
-                {
-                    throw new FormatException($"Invalid top-level JSON element: {doc.RootElement.ValueKind}");
-                }
-
-                VisitElement(doc.RootElement);
+                throw new FormatException($"Failed to parse JSON: {ex.Message}", ex);
             }
 
             return _data;
         }
 
-        private void VisitElement(JsonElement element)
+        private void ProcessDictionary(Dictionary<string, object> dict, string parentKey)
         {
-            var isEmpty = true;
-
-            foreach (JsonProperty property in element.EnumerateObject())
+            foreach (var kvp in dict)
             {
-                isEmpty = false;
-                EnterContext(property.Name);
-                VisitValue(property.Value);
-                ExitContext();
-            }
+                var currentKey = string.IsNullOrEmpty(parentKey) ? kvp.Key : $"{parentKey}.{kvp.Key}";
 
-            if (isEmpty && _stack.Count > 0)
-            {
-                _data[_stack.Peek()] = null;
-            }
-        }
-
-        // Visit a JSON value (could be an object, array, string, number, etc.)
-        private void VisitValue(JsonElement value)
-        {
-            switch (value.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    VisitElement(value);
-                    break;
-
-                case JsonValueKind.Array:
-                    int index = 0;
-                    foreach (JsonElement arrayElement in value.EnumerateArray())
+                if (kvp.Value is Dictionary<string, object> nestedDict)
+                {
+                    // Recursively process nested dictionaries
+                    ProcessDictionary(nestedDict, currentKey);
+                }
+                else if (kvp.Value is IList<object> list)
+                {
+                    // Process lists
+                    ProcessList(list, currentKey);
+                }
+                else
+                {
+                    // Add to the data dictionary
+                    if (_data.ContainsKey(currentKey))
                     {
-                        EnterContext(index.ToString());
-                        VisitValue(arrayElement);
-                        ExitContext();
-                        index++;
+                        throw new FormatException($"Duplicated key: {currentKey}");
                     }
-                    break;
-
-                case JsonValueKind.Number:
-                case JsonValueKind.String:
-                case JsonValueKind.True:
-                case JsonValueKind.False:
-                case JsonValueKind.Null:
-                    var key = _stack.Peek();
-                    if (_data.ContainsKey(key))
-                    {
-                        throw new FormatException($"Duplicated key: {key}");
-                    }
-                    _data[key] = value.ToString();
-                    break;
-
-                default:
-                    throw new FormatException($"Unsupported JSON token: {value.ValueKind}");
+                    _data[currentKey] = kvp.Value?.ToString(); 
+                }
             }
         }
 
-        private void EnterContext(string context)
+        private void ProcessList(IList<object> list, string parentKey)
         {
-            _stack.Push(_stack.Count > 0
-                ? _stack.Peek() + ConfigurationPath.KeyDelimiter + context
-                : context);
-        }
+            for (int i = 0; i < list.Count; i++)
+            {
+                var currentKey = $"{parentKey}[{i}]";
 
-        private void ExitContext() => _stack.Pop();
+                if (list[i] is Dictionary<string, object> nestedDict)
+                {
+                    ProcessDictionary(nestedDict, currentKey);
+                }
+                else
+                {
+                    if (_data.ContainsKey(currentKey))
+                    {
+                        throw new FormatException($"Duplicated key: {currentKey}");
+                    }
+                    _data[currentKey] = list[i]?.ToString(); 
+                }
+            }
+        }
     }
 }
