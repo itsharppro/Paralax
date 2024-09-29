@@ -19,12 +19,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-
-    <Version>1.0.$(GitHubRunNumber)</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.$(GitHubRunNumber)-beta</InformationalVersion>
-    
+   
     <PackageId>Paralax</PackageId>
     <PackageIcon>Paralax_logo.png</PackageIcon>
     <PackageIconUrl>https://github.com/itsharppro/Paralax/blob/main/docs/logo/Paralax_logo.png</PackageIconUrl>
