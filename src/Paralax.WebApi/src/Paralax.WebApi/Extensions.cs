@@ -19,6 +19,11 @@ using NetJSON;
 using Paralax.WebApi.Exceptions;
 using Paralax.WebApi.Formatters;
 using Paralax.WebApi.Requests;
+using Open.Serialization.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Paralax.Core;
 
 namespace Paralax.WebApi
 {
@@ -57,7 +62,8 @@ namespace Paralax.WebApi
             return handler.HandleAsync(request);
         }
 
-         public static IParalaxBuilder AddWebApi(this IParalaxBuilder builder, Action<IMvcCoreBuilder> configureMvc = null, string sectionName = SectionName)
+         public static IParalaxBuilder AddWebApi(this IParalaxBuilder builder, Action<IMvcCoreBuilder> configureMvc = null,
+         IJsonSerializer jsonSerializer = null,  string sectionName = SectionName)
         {
             if (string.IsNullOrWhiteSpace(sectionName))
             {
@@ -69,45 +75,69 @@ namespace Paralax.WebApi
                 return builder;
             }
 
-            // Add HttpContextAccessor and other needed services
-            builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            builder.Services.AddSingleton(new WebApiEndpointDefinitions());
+            if (jsonSerializer is null)
+        {
+            var jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                Converters = {new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)}
+            };
 
-            var options = builder.GetOptions<WebApiOptions>(sectionName);
-            builder.Services.AddSingleton(options);
+            jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 
-            var mvcCoreBuilder = builder.Services
-                .AddLogging()
-                .AddMvcCore();
+            var factory = new Open.Serialization.Json.System.JsonSerializerFactory(jsonSerializerOptions);
 
-            mvcCoreBuilder.AddMvcOptions(o =>
+            jsonSerializer = factory.GetSerializer();
+        }
+
+        if (jsonSerializer.GetType().Namespace?.Contains("Newtonsoft") == true)
+        {
+            builder.Services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
+            builder.Services.Configure<IISServerOptions>(o => o.AllowSynchronousIO = true);
+        }
+
+        builder.Services.AddSingleton(jsonSerializer);
+        builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        builder.Services.AddSingleton(new WebApiEndpointDefinitions());
+        var options = builder.GetOptions<WebApiOptions>(sectionName);
+        builder.Services.AddSingleton(options);
+        _bindRequestFromRoute = options.BindRequestFromRoute;
+
+        var mvcCoreBuilder = builder.Services
+            .AddLogging()
+            .AddMvcCore();
+
+        mvcCoreBuilder.AddMvcOptions(o =>
             {
                 o.OutputFormatters.Clear();
-                o.OutputFormatters.Add(new JsonOutputFormatter()); 
+                o.OutputFormatters.Add(new JsonOutputFormatter(jsonSerializer));
                 o.InputFormatters.Clear();
-                o.InputFormatters.Add(new JsonInputFormatter()); 
+                o.InputFormatters.Add(new JsonInputFormatter(jsonSerializer));
             })
             .AddDataAnnotations()
             .AddApiExplorer()
             .AddAuthorization();
 
-            configureMvc?.Invoke(mvcCoreBuilder);
+        configureMvc?.Invoke(mvcCoreBuilder);
 
-            builder.Services.Scan(scan =>
-                scan.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
-                    .AddClasses(classes => classes.AssignableTo(typeof(IRequestHandler<,>)))
-                    .AsImplementedInterfaces()
-                    .WithTransientLifetime());
+        builder.Services.Scan(s =>
+            s.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
+                .AddClasses(c => c.AssignableTo(typeof(IRequestHandler<,>))
+                    .WithoutAttribute(typeof(DecoratorAttribute)))
+                .AsImplementedInterfaces()
+                .WithTransientLifetime());
 
-            builder.Services.AddTransient<IRequestDispatcher, RequestDispatcher>();
+        builder.Services.AddTransient<IRequestDispatcher, RequestDispatcher>();
 
-            if (builder.Services.All(s => s.ServiceType != typeof(IExceptionToResponseMapper)))
-            {
-                builder.Services.AddTransient<IExceptionToResponseMapper, EmptyExceptionToResponseMapper>();
-            }
-
-            return builder;
+        if (builder.Services.All(s => s.ServiceType != typeof(IExceptionToResponseMapper)))
+        {
+            builder.Services.AddTransient<IExceptionToResponseMapper, EmptyExceptionToResponseMapper>();
         }
+
+        return builder;
+    }
 
         public static async Task<T> ReadJsonAsync<T>(this HttpContext context)
         {
@@ -160,46 +190,53 @@ namespace Paralax.WebApi
         }
 
 
-        public static T ReadQuery<T>(this HttpContext context) where T : class
+         public static T ReadQuery<T>(this HttpContext context) where T : class
+    {
+        var request = context.Request;
+        RouteValueDictionary values = null;
+
+        // Parse route data if available
+        if (HasRouteData(request))
         {
-            var request = context.Request;
-            var values = new Dictionary<string, object>();
-
-            // Parse route data if it exists
-            if (HasRouteData(request))
-            {
-                var routeValues = request.HttpContext.GetRouteData().Values;
-                foreach (var (key, value) in routeValues)
-                {
-                    values[key] = value;
-                }
-            }
-
-            // Parse query string if it exists
-            if (HasQueryString(request))
-            {
-                var queryString = HttpUtility.ParseQueryString(request.HttpContext.Request.QueryString.Value);
-                foreach (var key in queryString.AllKeys)
-                {
-                    if (!string.IsNullOrEmpty(key))
-                    {
-                        values[key] = queryString[key];
-                    }
-                }
-            }
-
-            // If there are no values, return a new instance of the object
-            if (!values.Any())
-            {
-                return null;
-            }
-
-            // Serialize the dictionary of values into JSON
-            var serialized = NetJSON.NetJSON.Serialize(values);
-
-            // Deserialize the JSON back into the expected object type
-            return NetJSON.NetJSON.Deserialize<T>(serialized);
+            values = request.HttpContext.GetRouteData().Values;
         }
+
+        // Parse query string if available
+        if (HasQueryString(request))
+        {
+            var queryString = HttpUtility.ParseQueryString(request.HttpContext.Request.QueryString.Value);
+            values ??= new RouteValueDictionary();
+
+            // Add query string parameters to values
+            foreach (var key in queryString.AllKeys)
+            {
+                values.TryAdd(key, queryString[key]);
+            }
+        }
+
+        // Get JSON serializer from the request services
+        var serializer = context.RequestServices.GetRequiredService<IJsonSerializer>();
+
+        // If no values were found, return an empty object
+        if (values == null || !values.Any())
+        {
+            return serializer.Deserialize<T>(EmptyJsonObject);
+        }
+
+        // Serialize the dictionary of values to JSON
+        var serializedValues = serializer.Serialize(values.ToDictionary(k => k.Key, k => k.Value))
+            ?.Replace("\\\"", "\"")  // Unescape quotes
+            .Replace("\"{", "{")    // Fix escaped curly brackets
+            .Replace("}\"", "}")
+            .Replace("\"[", "[")    // Fix escaped square brackets
+            .Replace("]\"", "]");
+
+        // Deserialize and return the resulting object
+        return serializer.Deserialize<T>(serializedValues);
+    }
+
+
+
 
 
         public static Task Ok(this HttpResponse response, object data = null)

@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using NetJSON;
+using Open.Serialization.Json;
 
 namespace Paralax.WebApi.Formatters
 {
@@ -13,15 +14,14 @@ namespace Paralax.WebApi.Formatters
     {
         private const string EmptyJson = "{}";
         private readonly ConcurrentDictionary<Type, MethodInfo> _methods = new();
+        private readonly IJsonSerializer _serializer;
         private readonly MethodInfo _deserializeMethod;
 
-        public JsonInputFormatter()
+        public JsonInputFormatter(IJsonSerializer serializer)
         {
-            // Ensure that the correct Deserialize method is selected
-            _deserializeMethod = typeof(NetJSON.NetJSON).GetMethods()
-                .Single(m => m.IsGenericMethod && m.Name == nameof(NetJSON.NetJSON.Deserialize) 
-                            && m.GetParameters().Length == 1
-                            && m.GetParameters()[0].ParameterType == typeof(string)); // Ensure it's the correct overload
+            _serializer = serializer;
+            _deserializeMethod = _serializer.GetType().GetMethods()
+                .Single(m => m.IsGenericMethod && m.Name == nameof(_serializer.Deserialize));
         }
 
         public bool CanRead(InputFormatterContext context)
@@ -38,10 +38,10 @@ namespace Paralax.WebApi.Formatters
             }
 
             var request = context.HttpContext.Request;
-            string json;
-
-            using (var streamReader = new StreamReader(request.Body))
+            var json = string.Empty;
+            if (request.Body is not null)
             {
+                using var streamReader = new StreamReader(request.Body);
                 json = await streamReader.ReadToEndAsync();
             }
 
@@ -50,18 +50,10 @@ namespace Paralax.WebApi.Formatters
                 json = EmptyJson;
             }
 
-            try
-            {
-                // Use NetJSON to deserialize the JSON string
-                var result = method.Invoke(null, new object[] { json });
+            var result = method.Invoke(_serializer, new object[] {json});
 
-                return await InputFormatterResult.SuccessAsync(result);
-            }
-            catch (Exception ex)
-            {
-                // Handle deserialization errors
-                throw new InvalidOperationException("Invalid JSON format", ex);
-            }
-        }
+            return await InputFormatterResult.SuccessAsync(result);
+        }        
     }
 }
+
