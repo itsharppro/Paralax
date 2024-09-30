@@ -9,6 +9,7 @@ namespace Paralax.WebApi.Utils
 {
     public static class Extensions
     {
+        // Returns the default instance of the specified type
         public static object GetDefaultInstance(this Type type)
         {
             if (type == typeof(string))
@@ -74,6 +75,16 @@ namespace Paralax.WebApi.Utils
                 return true;
             }
 
+            // Handle List<T> types
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                var elementType = type.GetGenericArguments()[0];
+                var listType = typeof(List<>).MakeGenericType(elementType);
+                defaultValue = Activator.CreateInstance(listType);
+                defaultValueCache[type] = defaultValue;
+                return true;
+            }
+
             if (typeof(IEnumerable).IsAssignableFrom(type))
             {
                 if (TryGetCollectionDefaultValue(type, out defaultValue))
@@ -118,7 +129,7 @@ namespace Paralax.WebApi.Utils
             return true;
         }
 
-        // Attempts to get a default value for a collection type (array or list)
+        // Attempts to get a default value for a collection type (array, List<T>, etc.)
         private static bool TryGetCollectionDefaultValue(Type type, out object defaultValue)
         {
             var elementType = type.IsGenericType ? type.GenericTypeArguments[0] : type.GetElementType();
