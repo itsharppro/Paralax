@@ -9,7 +9,6 @@ namespace Paralax.WebApi.Utils
 {
     public static class Extensions
     {
-        // Returns the default instance of the specified type
         public static object GetDefaultInstance(this Type type)
         {
             if (type == typeof(string))
@@ -64,10 +63,15 @@ namespace Paralax.WebApi.Utils
                 return true;
             }
 
-            if (type.Name == "IDictionary`2")
+            // Handle dictionary types
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
             {
-                defaultValue = null;
-                return false;
+                var keyType = type.GetGenericArguments()[0];
+                var valueType = type.GetGenericArguments()[1];
+                var dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                defaultValue = Activator.CreateInstance(dictionaryType);
+                defaultValueCache[type] = defaultValue;
+                return true;
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(type))
