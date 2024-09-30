@@ -9,7 +9,6 @@ namespace Paralax.WebApi.Utils
 {
     public static class Extensions
     {
-        // Returns the default instance of the specified type
         public static object GetDefaultInstance(this Type type)
         {
             if (type == typeof(string))
