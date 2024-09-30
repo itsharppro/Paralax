@@ -163,32 +163,44 @@ namespace Paralax.WebApi
         public static T ReadQuery<T>(this HttpContext context) where T : class
         {
             var request = context.Request;
-            RouteValueDictionary values = null;
-            
+            var values = new Dictionary<string, object>();
+
+            // Parse route data if it exists
             if (HasRouteData(request))
             {
-                values = request.HttpContext.GetRouteData().Values;
-            }
-
-            if (HasQueryString(request))
-            {
-                var queryString = HttpUtility.ParseQueryString(request.HttpContext.Request.QueryString.Value);
-                values ??= new RouteValueDictionary();
-                foreach (var key in queryString.AllKeys)
+                var routeValues = request.HttpContext.GetRouteData().Values;
+                foreach (var (key, value) in routeValues)
                 {
-                    values.TryAdd(key, queryString[key]);
+                    values[key] = value;
                 }
             }
 
-            if (values == null)
+            // Parse query string if it exists
+            if (HasQueryString(request))
             {
-                return NetJSON.NetJSON.Deserialize<T>(EmptyJsonObject);
+                var queryString = HttpUtility.ParseQueryString(request.HttpContext.Request.QueryString.Value);
+                foreach (var key in queryString.AllKeys)
+                {
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        values[key] = queryString[key];
+                    }
+                }
             }
 
-            var serialized = NetJSON.NetJSON.Serialize(values.ToDictionary(k => k.Key, k => k.Value));
+            // If there are no values, return a new instance of the object
+            if (!values.Any())
+            {
+                return null;
+            }
 
+            // Serialize the dictionary of values into JSON
+            var serialized = NetJSON.NetJSON.Serialize(values);
+
+            // Deserialize the JSON back into the expected object type
             return NetJSON.NetJSON.Deserialize<T>(serialized);
         }
+
 
         public static Task Ok(this HttpResponse response, object data = null)
         {
