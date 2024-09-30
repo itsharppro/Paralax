@@ -64,7 +64,7 @@ namespace Paralax.WebApi.Utils
                 return true;
             }
 
-            // Handle dictionary types
+            // Handle Dictionary<K,V> types
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
             {
                 var keyType = type.GetGenericArguments()[0];
@@ -85,6 +85,7 @@ namespace Paralax.WebApi.Utils
                 return true;
             }
 
+            // Handle IEnumerable and arrays
             if (typeof(IEnumerable).IsAssignableFrom(type))
             {
                 if (TryGetCollectionDefaultValue(type, out defaultValue))
@@ -97,12 +98,14 @@ namespace Paralax.WebApi.Utils
                 return false;
             }
 
+            // Handle interface or abstract class
             if (type.IsInterface || type.IsAbstract)
             {
                 defaultValue = null;
                 return false;
             }
 
+            // Handle arrays
             if (type.IsArray)
             {
                 if (TryGetCollectionDefaultValue(type, out defaultValue))
@@ -115,18 +118,25 @@ namespace Paralax.WebApi.Utils
                 return false;
             }
 
-            if (!type.IsClass)
+            // Handle structs and classes
+            if (type.IsClass)
             {
-                defaultValue = null;
-                return false;
+                // If it's a class, create an uninitialized instance and set its default properties
+                defaultValue = FormatterServices.GetUninitializedObject(type);
+                defaultValueCache[type] = defaultValue;
+                SetDefaultInstanceProperties(defaultValue, defaultValueCache);
+                return true;
             }
 
-            // If it's a class, create an uninitialized instance and set its default properties
-            defaultValue = FormatterServices.GetUninitializedObject(type);
-            defaultValueCache[type] = defaultValue;
-            SetDefaultInstanceProperties(defaultValue, defaultValueCache);
+            if (type.IsValueType)
+            {
+                defaultValue = Activator.CreateInstance(type); // Default instance for structs
+                defaultValueCache[type] = defaultValue;
+                return true;
+            }
 
-            return true;
+            defaultValue = null;
+            return false;
         }
 
         // Attempts to get a default value for a collection type (array, List<T>, etc.)
