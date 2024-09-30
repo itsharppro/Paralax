@@ -64,6 +64,13 @@ namespace Paralax.WebApi.Utils
                 return true;
             }
 
+            // Handle IDictionary<K,V> types like IDictionary`
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+            {
+                defaultValue = null; // ConvIDictionary` returns null for IDictionary
+                return false;
+            }
+
             // Handle Dictionary<K,V> types
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
             {
@@ -171,23 +178,31 @@ namespace Paralax.WebApi.Utils
         // Sets the value of a property or field on an object
         private static void SetValue(PropertyInfo propertyInfo, object instance, object value)
         {
+            var expectedType = propertyInfo.PropertyType;
+
+            // Convert the value to the expected type
+            var convertedValue = ConvertToExpectedType(expectedType, value);
+
             if (propertyInfo.CanWrite)
             {
-                propertyInfo.SetValue(instance, value);
-                return;
+                propertyInfo.SetValue(instance, convertedValue);
             }
+            else
+            {
+                var fieldInfo = instance.GetType()
+                    .GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SingleOrDefault(x => x.Name.StartsWith($"<{propertyInfo.Name}>"));
 
-            var fieldInfo = instance.GetType()
-                .GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
-                .SingleOrDefault(x => x.Name.StartsWith($"<{propertyInfo.Name}>"));
-
-            fieldInfo?.SetValue(instance, value);
+                fieldInfo?.SetValue(instance, convertedValue);
+            }
         }
 
         // Converts a string array to the required Dictionary type if possible
         public static bool TryConvertToDictionary(Type dictionaryType, object arrayValue, out object dictionary)
         {
             dictionary = null;
+
+            // Check if the target type is a generic Dictionary<string, string>
             if (!dictionaryType.IsGenericType || dictionaryType.GetGenericTypeDefinition() != typeof(Dictionary<,>))
             {
                 return false;
@@ -196,30 +211,66 @@ namespace Paralax.WebApi.Utils
             var keyType = dictionaryType.GetGenericArguments()[0];
             var valueType = dictionaryType.GetGenericArguments()[1];
 
+            // Ensure both key and value types are string
             if (keyType != typeof(string) || valueType != typeof(string))
             {
                 return false;
             }
 
+            // Convert string array to dictionary (use array index as key or custom logic)
             var stringArray = arrayValue as string[];
             if (stringArray == null)
             {
                 return false;
             }
 
+            // Create dictionary and map array elements to keys and values
             var dictionaryInstance = Activator.CreateInstance(dictionaryType) as IDictionary<string, string>;
-            foreach (var item in stringArray)
+
+            for (int i = 0; i < stringArray.Length; i++)
             {
-                dictionaryInstance[item] = item; // Simplified, use custom logic as needed
+                dictionaryInstance[$"Key_{i}"] = stringArray[i]; // Using "Key_" + index as the key, string as the value
             }
 
             dictionary = dictionaryInstance;
             return true;
         }
 
-        // Conversion handler for complex cases like string arrays to dictionaries
         public static object ConvertToExpectedType(Type targetType, object value)
         {
+            // If the value is already of the target type, return it directly
+            if (value != null && targetType.IsAssignableFrom(value.GetType()))
+            {
+                return value;
+            }
+
+            // Handle Guid types directly
+            if (targetType == typeof(Guid) && value is Guid)
+            {
+                return value;
+            }
+
+            // Handle conversion from string[] to IEnumerable<string>
+            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                var elementType = targetType.GetGenericArguments()[0];
+                if (value.GetType().IsArray && value.GetType().GetElementType() == elementType)
+                {
+                    return value;
+                }
+
+                if (typeof(IEnumerable).IsAssignableFrom(value.GetType()))
+                {
+                    var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType)) as IList;
+                    foreach (var item in (IEnumerable)value)
+                    {
+                        list.Add(Convert.ChangeType(item, elementType));
+                    }
+                    return list;
+                }
+            }
+
+            // Check if the target type is a dictionary
             if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
             {
                 if (TryConvertToDictionary(targetType, value, out var dictionary))
@@ -228,8 +279,51 @@ namespace Paralax.WebApi.Utils
                 }
             }
 
-            // Direct assignment fallback if no conversion is needed
-            return value;
+            // Handle nullable types
+            if (Nullable.GetUnderlyingType(targetType) != null)
+            {
+                if (value == null)
+                    return null;
+
+                targetType = Nullable.GetUnderlyingType(targetType);
+            }
+
+            // For value types and simple reference types, fallback to Convert.ChangeType
+            if (value is IConvertible)
+            {
+                return Convert.ChangeType(value, targetType);
+            }
+
+            throw new InvalidCastException($"Cannot convert value of type {value.GetType()} to {targetType}");
+        }
+
+        // Extension to convert any object to another type by utilizing property-to-property mapping
+        public static T ConvertTo<T>(this object value)
+        {
+            var targetType = typeof(T);
+
+            // Handle simple types directly
+            if (targetType.IsAssignableFrom(value.GetType()))
+            {
+                return (T)value;
+            }
+
+            // Handle more complex conversions
+            var instance = Activator.CreateInstance<T>();
+            var properties = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var property in properties)
+            {
+                var sourceProperty = value.GetType().GetProperty(property.Name);
+                if (sourceProperty != null)
+                {
+                    var sourceValue = sourceProperty.GetValue(value);
+                    var convertedValue = ConvertToExpectedType(property.PropertyType, sourceValue);
+                    property.SetValue(instance, convertedValue);
+                }
+            }
+
+            return instance;
         }
     }
 }
