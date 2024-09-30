@@ -12,30 +12,37 @@ namespace Paralax.WebApi.Security
         private const string SectionName = "security";
         private const string RegistryName = "security";
 
-        public static IServiceCollection AddCertificateAuthentication(this IServiceCollection services,
-            SecurityOptions options, Type permissionValidatorType = null)
+        public static IParalaxBuilder AddCertificateAuthentication(this IParalaxBuilder builder,
+            string sectionName = SectionName, Type permissionValidatorType = null)
         {
-            services.AddSingleton(options);
+            var options = builder.GetOptions<SecurityOptions>(sectionName);
+            builder.Services.AddSingleton(options);
+
+            if (!builder.TryRegister(RegistryName))
+            {
+                return builder;
+            }
+
             if (options.Certificate is null || !options.Certificate.Enabled)
             {
-                return services;
+                return builder;
             }
 
             if (permissionValidatorType is not null)
             {
-                services.AddSingleton(typeof(ICertificatePermissionValidator), permissionValidatorType);
+                builder.Services.AddSingleton(typeof(ICertificatePermissionValidator), permissionValidatorType);
             }
             else
             {
-                services.AddSingleton<ICertificatePermissionValidator, DefaultCertificatePermissionValidator>();
+                builder.Services.AddSingleton<ICertificatePermissionValidator, DefaultCertificatePermissionValidator>();
             }
 
-            services.AddSingleton<CertificateMiddleware>();
+            builder.Services.AddSingleton<CertificateMiddleware>();
 
-            services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
+            builder.Services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
                 .AddCertificate();
 
-            services.AddCertificateForwarding(c =>
+            builder.Services.AddCertificateForwarding(c =>
             {
                 c.CertificateHeader = options.Certificate.GetHeaderName();
                 c.HeaderConverter = headerValue =>
@@ -44,7 +51,7 @@ namespace Paralax.WebApi.Security
                         : new X509Certificate2(StringToByteArray(headerValue));
             });
 
-            return services;
+            return builder;
         }
 
         public static IApplicationBuilder UseCertificateAuthentication(this IApplicationBuilder app)
