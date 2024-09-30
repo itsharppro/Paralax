@@ -98,7 +98,7 @@ namespace Paralax.WebApi.Utils
                 return false;
             }
 
-            // Handle interface or abstract class
+            // Handle abstract class or interface
             if (type.IsInterface || type.IsAbstract)
             {
                 defaultValue = null;
@@ -118,10 +118,10 @@ namespace Paralax.WebApi.Utils
                 return false;
             }
 
-            // Handle structs and classes
+            // Handle struct or class
             if (type.IsClass)
             {
-                // If it's a class, create an uninitialized instance and set its default properties
+                // Create an uninitialized instance of the class
                 defaultValue = FormatterServices.GetUninitializedObject(type);
                 defaultValueCache[type] = defaultValue;
                 SetDefaultInstanceProperties(defaultValue, defaultValueCache);
@@ -130,7 +130,8 @@ namespace Paralax.WebApi.Utils
 
             if (type.IsValueType)
             {
-                defaultValue = Activator.CreateInstance(type); // Default instance for structs
+                // Create a default value for a struct
+                defaultValue = Activator.CreateInstance(type);
                 defaultValueCache[type] = defaultValue;
                 return true;
             }
@@ -139,7 +140,7 @@ namespace Paralax.WebApi.Utils
             return false;
         }
 
-        // Attempts to get a default value for a collection type (array, List<T>, etc.)
+        // Attempts to get a default value for a collection type (e.g., array, List<T>, etc.)
         private static bool TryGetCollectionDefaultValue(Type type, out object defaultValue)
         {
             var elementType = type.IsGenericType ? type.GenericTypeArguments[0] : type.GetElementType();
@@ -150,16 +151,17 @@ namespace Paralax.WebApi.Utils
                 return false;
             }
 
+            if (elementType == typeof(string))
+            {
+                defaultValue = Array.Empty<string>();
+                return true;
+            }
+
+            // Handle IEnumerable<T> or other collections
             if (typeof(IEnumerable).IsAssignableFrom(elementType))
             {
-                if (elementType == typeof(string))
-                {
-                    defaultValue = Array.Empty<string>();
-                    return true;
-                }
-
-                defaultValue = null;
-                return false;
+                defaultValue = Array.CreateInstance(elementType, 0);
+                return true;
             }
 
             defaultValue = Array.CreateInstance(elementType, 0);
@@ -180,6 +182,54 @@ namespace Paralax.WebApi.Utils
                 .SingleOrDefault(x => x.Name.StartsWith($"<{propertyInfo.Name}>"));
 
             fieldInfo?.SetValue(instance, value);
+        }
+
+        // Converts a string array to the required Dictionary type if possible
+        public static bool TryConvertToDictionary(Type dictionaryType, object arrayValue, out object dictionary)
+        {
+            dictionary = null;
+            if (!dictionaryType.IsGenericType || dictionaryType.GetGenericTypeDefinition() != typeof(Dictionary<,>))
+            {
+                return false;
+            }
+
+            var keyType = dictionaryType.GetGenericArguments()[0];
+            var valueType = dictionaryType.GetGenericArguments()[1];
+
+            if (keyType != typeof(string) || valueType != typeof(string))
+            {
+                return false;
+            }
+
+            var stringArray = arrayValue as string[];
+            if (stringArray == null)
+            {
+                return false;
+            }
+
+            var dictionaryInstance = Activator.CreateInstance(dictionaryType) as IDictionary<string, string>;
+            foreach (var item in stringArray)
+            {
+                dictionaryInstance[item] = item; // Simplified, use custom logic as needed
+            }
+
+            dictionary = dictionaryInstance;
+            return true;
+        }
+
+        // Conversion handler for complex cases like string arrays to dictionaries
+        public static object ConvertToExpectedType(Type targetType, object value)
+        {
+            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+            {
+                if (TryConvertToDictionary(targetType, value, out var dictionary))
+                {
+                    return dictionary;
+                }
+            }
+
+            // Direct assignment fallback if no conversion is needed
+            return value;
         }
     }
 }
