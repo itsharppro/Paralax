@@ -64,10 +64,15 @@ namespace Paralax.WebApi.Utils
                 return true;
             }
 
-            if (type.Name == "IDictionary`2")
+            // Handle dictionary types
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
             {
-                defaultValue = null;
-                return false;
+                var keyType = type.GetGenericArguments()[0];
+                var valueType = type.GetGenericArguments()[1];
+                var dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                defaultValue = Activator.CreateInstance(dictionaryType);
+                defaultValueCache[type] = defaultValue;
+                return true;
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(type))
