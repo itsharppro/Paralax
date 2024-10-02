@@ -137,10 +137,16 @@ namespace Paralax.WebApi.CQRS.Builders
 
         private static async Task WriteJsonAsync(HttpResponse response, object result)
         {
+            NetJSON.NetJSON.DateFormat = NetJSON.NetJSONDateFormat.ISO;
+            NetJSON.NetJSON.SkipDefaultValue = false;
+
             response.ContentType = "application/json";
+
             var json = NetJSON.NetJSON.Serialize(result);
+            
             await response.WriteAsync(json);
         }
+
 
         private static async Task<T> ReadJsonAsync<T>(HttpContext context) where T : class
         {
