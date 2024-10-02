@@ -7,6 +7,8 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Builder;
@@ -15,15 +17,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NetJSON; 
+using Open.Serialization.Json;
 using Paralax.WebApi.Exceptions;
 using Paralax.WebApi.Formatters;
 using Paralax.WebApi.Requests;
-using Open.Serialization.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Paralax.Core;
 
 namespace Paralax.WebApi
 {
@@ -62,8 +59,7 @@ namespace Paralax.WebApi
             return handler.HandleAsync(request);
         }
 
-         public static IParalaxBuilder AddWebApi(this IParalaxBuilder builder, Action<IMvcCoreBuilder> configureMvc = null,
-         IJsonSerializer jsonSerializer = null,  string sectionName = SectionName)
+        public static IParalaxBuilder AddWebApi(this IParalaxBuilder builder, Action<IMvcCoreBuilder> configureMvc = null, IJsonSerializer jsonSerializer = null, string sectionName = SectionName)
         {
             if (string.IsNullOrWhiteSpace(sectionName))
             {
@@ -75,69 +71,63 @@ namespace Paralax.WebApi
                 return builder;
             }
 
+            // Setup JSON serializer with System.Text.Json if not provided
             if (jsonSerializer is null)
-        {
-            var jsonSerializerOptions = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true,
-                NumberHandling = JsonNumberHandling.AllowReadingFromString,
-                Converters = {new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)}
-            };
+                var jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true,
+                    IgnoreNullValues = false,
+                    NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                    Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+                };
 
-            jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+                var factory = new Open.Serialization.Json.System.JsonSerializerFactory(jsonSerializerOptions);
+                jsonSerializer = factory.GetSerializer();
+            }
 
-            var factory = new Open.Serialization.Json.System.JsonSerializerFactory(jsonSerializerOptions);
+            builder.Services.AddSingleton(jsonSerializer);
+            builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            builder.Services.AddSingleton(new WebApiEndpointDefinitions());
 
-            jsonSerializer = factory.GetSerializer();
-        }
+            var options = builder.GetOptions<WebApiOptions>(sectionName);
+            builder.Services.AddSingleton(options);
+            _bindRequestFromRoute = options.BindRequestFromRoute;
 
-        if (jsonSerializer.GetType().Namespace?.Contains("Newtonsoft") == true)
-        {
-            builder.Services.Configure<KestrelServerOptions>(o => o.AllowSynchronousIO = true);
-            builder.Services.Configure<IISServerOptions>(o => o.AllowSynchronousIO = true);
-        }
+            var mvcCoreBuilder = builder.Services
+                .AddLogging()
+                .AddMvcCore();
 
-        builder.Services.AddSingleton(jsonSerializer);
-        builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-        builder.Services.AddSingleton(new WebApiEndpointDefinitions());
-        var options = builder.GetOptions<WebApiOptions>(sectionName);
-        builder.Services.AddSingleton(options);
-        _bindRequestFromRoute = options.BindRequestFromRoute;
-
-        var mvcCoreBuilder = builder.Services
-            .AddLogging()
-            .AddMvcCore();
-
-        mvcCoreBuilder.AddMvcOptions(o =>
+            // Configure formatters using the injected IJsonSerializer
+            mvcCoreBuilder.AddMvcOptions(o =>
             {
                 o.OutputFormatters.Clear();
-                o.OutputFormatters.Add(new JsonOutputFormatter(jsonSerializer));
+                o.OutputFormatters.Add(new JsonOutputFormatter(jsonSerializer)); // Use the new serializer
                 o.InputFormatters.Clear();
-                o.InputFormatters.Add(new JsonInputFormatter(jsonSerializer));
+                o.InputFormatters.Add(new JsonInputFormatter(jsonSerializer)); // Use the new serializer
             })
             .AddDataAnnotations()
             .AddApiExplorer()
             .AddAuthorization();
 
-        configureMvc?.Invoke(mvcCoreBuilder);
+            configureMvc?.Invoke(mvcCoreBuilder);
 
-        builder.Services.Scan(s =>
-            s.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
-                .AddClasses(c => c.AssignableTo(typeof(IRequestHandler<,>))
-                    .WithoutAttribute(typeof(DecoratorAttribute)))
-                .AsImplementedInterfaces()
-                .WithTransientLifetime());
+            builder.Services.Scan(scan =>
+                scan.FromAssemblies(AppDomain.CurrentDomain.GetAssemblies())
+                    .AddClasses(classes => classes.AssignableTo(typeof(IRequestHandler<,>)))
+                    .AsImplementedInterfaces()
+                    .WithTransientLifetime());
 
-        builder.Services.AddTransient<IRequestDispatcher, RequestDispatcher>();
+            builder.Services.AddTransient<IRequestDispatcher, RequestDispatcher>();
 
-        if (builder.Services.All(s => s.ServiceType != typeof(IExceptionToResponseMapper)))
-        {
-            builder.Services.AddTransient<IExceptionToResponseMapper, EmptyExceptionToResponseMapper>();
+            if (builder.Services.All(s => s.ServiceType != typeof(IExceptionToResponseMapper)))
+            {
+                builder.Services.AddTransient<IExceptionToResponseMapper, EmptyExceptionToResponseMapper>();
+            }
+
+            return builder;
         }
-
-        return builder;
-    }
 
         public static async Task<T> ReadJsonAsync<T>(this HttpContext context)
         {
@@ -152,9 +142,8 @@ namespace Paralax.WebApi
 
             try
             {
-                using var reader = new StreamReader(context.Request.Body);
-                var json = await reader.ReadToEndAsync();
-                var payload = NetJSON.NetJSON.Deserialize<T>(json);
+                var serializer = context.RequestServices.GetRequiredService<IJsonSerializer>();
+                var payload = await serializer.DeserializeAsync<T>(context.Request.Body);
 
                 if (_bindRequestFromRoute && HasRouteData(context.Request))
                 {
@@ -189,55 +178,49 @@ namespace Paralax.WebApi
             return builder;
         }
 
-
-         public static T ReadQuery<T>(this HttpContext context) where T : class
-    {
-        var request = context.Request;
-        RouteValueDictionary values = null;
-
-        // Parse route data if available
-        if (HasRouteData(request))
+        public static T ReadQuery<T>(this HttpContext context) where T : class
         {
-            values = request.HttpContext.GetRouteData().Values;
-        }
+            var request = context.Request;
+            var values = new Dictionary<string, object>();
 
-        // Parse query string if available
-        if (HasQueryString(request))
-        {
-            var queryString = HttpUtility.ParseQueryString(request.HttpContext.Request.QueryString.Value);
-            values ??= new RouteValueDictionary();
-
-            // Add query string parameters to values
-            foreach (var key in queryString.AllKeys)
+            // Parse route data if it exists
+            if (HasRouteData(request))
             {
-                values.TryAdd(key, queryString[key]);
+                var routeValues = request.HttpContext.GetRouteData().Values;
+                foreach (var (key, value) in routeValues)
+                {
+                    values[key] = value;
+                }
             }
+
+            // Parse query string if it exists
+            if (HasQueryString(request))
+            {
+                var queryString = HttpUtility.ParseQueryString(request.HttpContext.Request.QueryString.Value);
+                foreach (var key in queryString.AllKeys)
+                {
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        values.TryAdd(key, queryString[key]);
+                    }
+                }
+            }
+
+            var serializer = context.RequestServices.GetRequiredService<IJsonSerializer>();
+            if (!values.Any())
+            {
+                return serializer.Deserialize<T>(EmptyJsonObject);
+            }
+
+            var serialized = serializer.Serialize(values.ToDictionary(k => k.Key, k => k.Value))
+                ?.Replace("\\\"", "\"")
+                .Replace("\"{", "{")
+                .Replace("}\"", "}")
+                .Replace("\"[", "[")
+                .Replace("]\"", "]");
+
+            return serializer.Deserialize<T>(serialized);
         }
-
-        // Get JSON serializer from the request services
-        var serializer = context.RequestServices.GetRequiredService<IJsonSerializer>();
-
-        // If no values were found, return an empty object
-        if (values == null || !values.Any())
-        {
-            return serializer.Deserialize<T>(EmptyJsonObject);
-        }
-
-        // Serialize the dictionary of values to JSON
-        var serializedValues = serializer.Serialize(values.ToDictionary(k => k.Key, k => k.Value))
-            ?.Replace("\\\"", "\"")  // Unescape quotes
-            .Replace("\"{", "{")    // Fix escaped curly brackets
-            .Replace("}\"", "}")
-            .Replace("\"[", "[")    // Fix escaped square brackets
-            .Replace("]\"", "]");
-
-        // Deserialize and return the resulting object
-        return serializer.Deserialize<T>(serializedValues);
-    }
-
-
-
-
 
         public static Task Ok(this HttpResponse response, object data = null)
         {
@@ -248,11 +231,16 @@ namespace Paralax.WebApi
         public static Task Created(this HttpResponse response, string location = null, object data = null)
         {
             response.StatusCode = (int)HttpStatusCode.Created;
-            if (!string.IsNullOrWhiteSpace(location) && !response.Headers.ContainsKey(LocationHeader))
+             if (string.IsNullOrWhiteSpace(location))
+            {
+                return Task.CompletedTask;
+            }
+
+            if (!response.Headers.ContainsKey(LocationHeader))
             {
                 response.Headers.Add(LocationHeader, location);
             }
-            return data != null ? response.WriteJsonAsync(data) : Task.CompletedTask;
+            return data is null ? Task.CompletedTask : response.WriteJsonAsync(data);
         }
 
         public static Task Accepted(this HttpResponse response)
@@ -298,11 +286,20 @@ namespace Paralax.WebApi
         }
 
         public static async Task WriteJsonAsync<T>(this HttpResponse response, T value)
-        {
-            response.ContentType = JsonContentType;
-            var json = NetJSON.NetJSON.Serialize(value);
-            await response.WriteAsync(json);
-        }
+{
+    response.ContentType = JsonContentType;
+    var serializer = response.HttpContext.RequestServices.GetRequiredService<IJsonSerializer>();
+
+    // Serialize the object to a string
+    var serializedJson = serializer.Serialize(value);
+
+    // Log the serialized JSON to the console
+    Console.WriteLine($"Serialized JSON Response: {serializedJson}");
+
+    // Write the serialized JSON to the response body
+    await response.WriteAsync(serializedJson);
+}
+
 
         public static T Bind<T>(this T model, Expression<Func<T, object>> expression, object value)
             => model.Bind<T, object>(expression, value);

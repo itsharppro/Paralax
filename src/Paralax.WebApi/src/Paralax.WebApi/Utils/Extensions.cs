@@ -4,13 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text.RegularExpressions;
 
 namespace Paralax.WebApi.Utils
 {
     public static class Extensions
     {
-        private static readonly Regex JsDateRegex = new Regex(@"\/Date\((\d+)(?:[+-]\d+)?\)\/", RegexOptions.Compiled);
         // Returns the default instance of the specified type
         public static object GetDefaultInstance(this Type type)
         {
@@ -281,13 +279,6 @@ namespace Paralax.WebApi.Utils
                 }
             }
 
-            // Date handling
-            if (targetType == typeof(DateTime))
-            {
-                return ParseDateTime(value);
-            }
-
-
             // Handle nullable types
             if (Nullable.GetUnderlyingType(targetType) != null)
             {
@@ -333,34 +324,6 @@ namespace Paralax.WebApi.Utils
             }
 
             return instance;
-        }
-
-        public static DateTime? ParseDateTime(object value)
-        {
-            if (value == null) return null;
-
-            // Check for JS-style date \/Date(...)
-            var stringValue = value.ToString();
-            var match = JsDateRegex.Match(stringValue);
-            if (match.Success && long.TryParse(match.Groups[1].Value, out var unixTimeMs))
-            {
-                // Convert milliseconds since Unix epoch
-                return DateTimeOffset.FromUnixTimeMilliseconds(unixTimeMs).UtcDateTime;
-            }
-
-            // Try ISO 8601 date parsing
-            if (DateTime.TryParse(stringValue, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsedDate))
-            {
-                return parsedDate;
-            }
-
-            // Try parsing as Unix timestamp
-            if (long.TryParse(stringValue, out var unixTimeSeconds))
-            {
-                return DateTimeOffset.FromUnixTimeSeconds(unixTimeSeconds).UtcDateTime;
-            }
-
-            return null;
         }
     }
 }

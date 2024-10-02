@@ -10,7 +10,6 @@ namespace Paralax.WebApi
     {
         public static readonly IJsonFormatterResolver Instance = new ParalaxFormatterResolver();
 
-        // Resolvers that will be used if no custom formatter is available.
         private static readonly IJsonFormatterResolver[] Resolvers =
         {
             StandardResolver.CamelCase, // Use CamelCase as a standard fallback resolver

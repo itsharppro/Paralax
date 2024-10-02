@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Formatters;
-using NetJSON;
 using Open.Serialization.Json;
 
 namespace Paralax.WebApi.Formatters
@@ -19,7 +18,8 @@ namespace Paralax.WebApi.Formatters
 
         public JsonInputFormatter(IJsonSerializer serializer)
         {
-            _serializer = serializer;
+            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+
             _deserializeMethod = _serializer.GetType().GetMethods()
                 .Single(m => m.IsGenericMethod && m.Name == nameof(_serializer.Deserialize));
         }
@@ -38,10 +38,10 @@ namespace Paralax.WebApi.Formatters
             }
 
             var request = context.HttpContext.Request;
-            var json = string.Empty;
-            if (request.Body is not null)
+            string json;
+
+            using (var streamReader = new StreamReader(request.Body))
             {
-                using var streamReader = new StreamReader(request.Body);
                 json = await streamReader.ReadToEndAsync();
             }
 
@@ -50,10 +50,16 @@ namespace Paralax.WebApi.Formatters
                 json = EmptyJson;
             }
 
-            var result = method.Invoke(_serializer, new object[] {json});
+            try
+            {
+                var result = method.Invoke(_serializer, new object[] { json });
 
-            return await InputFormatterResult.SuccessAsync(result);
-        }        
+                return await InputFormatterResult.SuccessAsync(result);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Invalid JSON format", ex);
+            }
+        }
     }
 }
-

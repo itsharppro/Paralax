@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Formatters;
-using NetJSON;
 using Open.Serialization.Json;
 
 namespace Paralax.WebApi.Formatters
@@ -28,12 +27,13 @@ namespace Paralax.WebApi.Formatters
             }
 
             context.HttpContext.Response.ContentType = "application/json";
+
             if (context.Object is string json)
             {
                 await context.HttpContext.Response.WriteAsync(json);
                 return;
             }
-                
+
             await _serializer.SerializeAsync(context.HttpContext.Response.Body, context.Object);
         }
     }

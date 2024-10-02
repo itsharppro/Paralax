@@ -3,19 +3,21 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using NetJSON;
+using Open.Serialization.Json;
 
 namespace Paralax.WebApi.Exceptions
 {
     internal sealed class ErrorHandlerMiddleware : IMiddleware
     {
         private readonly IExceptionToResponseMapper _exceptionToResponseMapper;
+        private readonly IJsonSerializer _jsonSerializer;
         private readonly ILogger<ErrorHandlerMiddleware> _logger;
 
         public ErrorHandlerMiddleware(IExceptionToResponseMapper exceptionToResponseMapper,
-            ILogger<ErrorHandlerMiddleware> logger)
+            IJsonSerializer jsonSerializer, ILogger<ErrorHandlerMiddleware> logger)
         {
             _exceptionToResponseMapper = exceptionToResponseMapper;
+            _jsonSerializer = jsonSerializer;
             _logger = logger;
         }
 
@@ -28,7 +30,7 @@ namespace Paralax.WebApi.Exceptions
             catch (Exception exception)
             {
                 _logger.LogError(exception, "An error occurred while processing the request.");
-                await HandleErrorAsync(context, exception);  // Handle the error when caught
+                await HandleErrorAsync(context, exception);
             }
         }
 
@@ -48,10 +50,7 @@ namespace Paralax.WebApi.Exceptions
 
             context.Response.ContentType = "application/json";
 
-            // Use NetJSON to serialize the response
-            var jsonResponse = NetJSON.NetJSON.Serialize(response);
-
-            await context.Response.WriteAsync(jsonResponse);
+            await _jsonSerializer.SerializeAsync(context.Response.Body, response);
         }
     }
 }
