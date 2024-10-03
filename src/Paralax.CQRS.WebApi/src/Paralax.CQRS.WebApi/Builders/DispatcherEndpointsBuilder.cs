@@ -6,8 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 using NetJSON;
 using Paralax.CQRS.Commands;
 using Paralax.CQRS.Queries;
+using Paralax.WebApi;
+using Paralax.CQRS.WebApi;
 
-namespace Paralax.WebApi.CQRS.Builders
+namespace Paralax.CQRS.WebApi.Builders
 {
     public class DispatcherEndpointsBuilder : IDispatcherEndpointsBuilder
     {
@@ -49,7 +51,8 @@ namespace Paralax.WebApi.CQRS.Builders
                         return;
                     }
 
-                    await WriteJsonAsync(ctx.Response, result);
+                    // await WriteJsonAsync(ctx.Response, result);
+                    await ctx.Response.WriteJsonAsync(result);
                     return;
                 }
 

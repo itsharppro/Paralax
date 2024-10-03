@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Paralax.CQRS.Commands;
 using Paralax.CQRS.Queries;
+using Paralax.CQRS.WebApi.Builders;
+using Paralax.CQRS.WebApi.Middlewares;
 using Paralax.WebApi;
-using Paralax.WebApi.CQRS;
-using Paralax.WebApi.CQRS.Builders;
-using Paralax.WebApi.CQRS.Middlewares;
+
 
 namespace Paralax.CQRS.WebApi
 {

@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
 
-namespace Paralax.WebApi.CQRS.Middlewares
+namespace Paralax.CQRS.WebApi.Middlewares
 {
     public class PublicContractsMiddleware
     {

@@ -5,7 +5,7 @@ using Paralax.CQRS.Queries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
-namespace Paralax.WebApi.CQRS
+namespace Paralax.CQRS.WebApi
 {
     public interface IDispatcherEndpointsBuilder
     {
