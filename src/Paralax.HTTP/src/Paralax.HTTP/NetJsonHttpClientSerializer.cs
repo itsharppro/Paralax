@@ -36,7 +36,12 @@ namespace Paralax.HTTP
             using (var reader = new StreamReader(stream))
             {
                 var content = await reader.ReadToEndAsync();
-                return NetJSON.NetJSON.Deserialize<T>(content, _settings);
+                var result = typeof(NetJSON.NetJSON)
+                    .GetMethod("Deserialize")
+                    .MakeGenericMethod(typeof(T))
+                    .Invoke(null, new object[] { content, _settings });
+
+                return (T)result;
             }
         }
 
