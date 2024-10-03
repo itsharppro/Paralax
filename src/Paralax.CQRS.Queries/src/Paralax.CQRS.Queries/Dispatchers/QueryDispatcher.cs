@@ -22,19 +22,22 @@ namespace Paralax.CQRS.Queries.Dispatchers
 
             // We get the 'HandleAsync' method directly from the handler
             var handleAsyncMethod = handlerType.GetMethod(nameof(IQueryHandler<IQuery<TResult>, TResult>.HandleAsync));
-            if (handleAsyncMethod == null)
-            {
-                throw new InvalidOperationException($"Handler for query '{query.GetType().Name}' does not contain a valid 'HandleAsync' method.");
-            }
+            // if (handleAsyncMethod == null)
+            // {
+            //     throw new InvalidOperationException($"Handler for query '{query.GetType().Name}' does not contain a valid 'HandleAsync' method.");
+            // }
 
-            var taskResult = handleAsyncMethod.Invoke(handler, new object[] { query, cancellationToken });
+            // var taskResult = handleAsyncMethod.Invoke(handler, new object[] { query, cancellationToken });
 
-            if (taskResult is Task<TResult> resultTask)
-            {
-                return await resultTask;
-            }
+            // if (taskResult is Task<TResult> resultTask)
+            // {
+            //     return await resultTask;
+            // }
 
-            throw new InvalidOperationException($"HandleAsync method for '{query.GetType().Name}' returned an invalid result.");
+            // throw new InvalidOperationException($"HandleAsync method for '{query.GetType().Name}' returned an invalid result.");
+             return await (Task<TResult>) handlerType
+            .GetMethod(nameof(IQueryHandler<IQuery<TResult>, TResult>.HandleAsync))?
+            .Invoke(handler, new object[] {query, cancellationToken});
         }
 
         public async Task<TResult> QueryAsync<TQuery, TResult>(TQuery query, CancellationToken cancellationToken = default)
