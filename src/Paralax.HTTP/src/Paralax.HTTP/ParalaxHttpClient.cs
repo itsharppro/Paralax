@@ -180,6 +180,7 @@ namespace Paralax.HTTP
             var stream = await response.Content.ReadAsStreamAsync();
             serializer ??= _serializer;
             var result = await serializer.DeserializeAsync<T>(stream);
+             Console.WriteLine($"Deserialized Result: {result}");
 
             return new HttpResult<T>(result, response);
         }
@@ -198,7 +199,6 @@ namespace Paralax.HTTP
             return content;
         }
 
-        // Retry policy using Polly
         private async Task<T> RetryPolicy<T>(Func<Task<T>> action)
         {
             return await Policy
@@ -209,22 +209,18 @@ namespace Paralax.HTTP
 
         protected virtual async Task<HttpResult<T>> SendResultAsync<T>(string uri, Method method, HttpContent content = null, IHttpClientSerializer serializer = null)
         {
-            // Sending the request using the method and content
             var response = await SendAsync(uri, method, content);
             
-            // If the response status code is not successful, return a default result
             if (!response.IsSuccessStatusCode)
             {
                 return new HttpResult<T>(default, response);
             }
 
-            // Read the response content stream
             var stream = await response.Content.ReadAsStreamAsync();
             
-            // Deserialize the stream using the provided serializer (or default to _serializer)
             var result = await DeserializeJsonFromStream<T>(stream, serializer);
+            Console.WriteLine($"Deserialized Result: {result}");
             
-            // Return the deserialized result along with the response
             return new HttpResult<T>(result, response);
         }
 
@@ -235,7 +231,6 @@ namespace Paralax.HTTP
                 return default;
             }
 
-            // Use the provided serializer or default to _serializer
             serializer ??= _serializer;
 
             return await serializer.DeserializeAsync<T>(stream);
@@ -253,7 +248,6 @@ namespace Paralax.HTTP
         }
     }
 
-    // Extension method for converting Method enum to HttpMethod
     internal static class MethodExtensions
     {
         public static HttpMethod ToHttpMethod(this ParalaxHttpClient.Method method)

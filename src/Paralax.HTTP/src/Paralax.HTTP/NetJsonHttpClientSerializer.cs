@@ -12,9 +12,11 @@ namespace Paralax.HTTP
         {
             _settings = settings ?? new NetJSONSettings
             {
-                UseEnumString = true,   
-                CaseSensitive = false, 
-                SkipDefaultValue = true 
+                UseEnumString = true,             
+                CaseSensitive = false,            
+                SkipDefaultValue = false,         
+                DateFormat = NetJSONDateFormat.ISO,
+                TimeZoneFormat = NetJSONTimeZoneFormat.Utc
             };
         }
 
