@@ -58,7 +58,7 @@ namespace Paralax.HTTP
             }
 
             builder.Services.AddSingleton(options);
-            builder.Services.AddSingleton<IHttpClientSerializer, NetJsonHttpClientSerializer>();
+            builder.Services.AddSingleton<IHttpClientSerializer, MessagePackHttpClientSerializer>();
 
             var clientBuilder = builder.Services.AddHttpClient<IHttpClient, ParalaxHttpClient>(clientName);
             httpClientBuilder?.Invoke(clientBuilder);
