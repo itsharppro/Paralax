@@ -12,19 +12,26 @@ namespace Paralax.HTTP
         {
             _settings = settings ?? new NetJSONSettings
             {
-                UseEnumString = true,   
-                CaseSensitive = false, 
-                SkipDefaultValue = true 
+                UseEnumString = true,
+                CaseSensitive = false,
+                SkipDefaultValue = false,     
+                DateFormat = NetJSONDateFormat.ISO,
+                TimeZoneFormat = NetJSONTimeZoneFormat.Utc
             };
         }
 
-        public string Serialize<T>(T value) => NetJSON.NetJSON.Serialize(value, _settings);
+        public string Serialize<T>(T value)
+        {
+            return NetJSON.NetJSON.Serialize(value, _settings);
+        }
 
         public async Task SerializeAsync<T>(Stream stream, T value)
         {
-            using (var writer = new StreamWriter(stream))
+            var json = NetJSON.NetJSON.Serialize(value, _settings);  
+
+            using (var writer = new StreamWriter(stream)) 
             {
-                await writer.WriteAsync(NetJSON.NetJSON.Serialize(value, _settings));
+                await writer.WriteAsync(json);
                 await writer.FlushAsync();
             }
         }
@@ -34,10 +41,16 @@ namespace Paralax.HTTP
             using (var reader = new StreamReader(stream))
             {
                 var content = await reader.ReadToEndAsync();
-                return NetJSON.NetJSON.Deserialize<T>(content, _settings);
+
+                var result = NetJSON.NetJSON.Deserialize<T>(content, _settings);
+                
+                return result;
             }
         }
 
-        public T Deserialize<T>(string json) => NetJSON.NetJSON.Deserialize<T>(json, _settings);
+        public T Deserialize<T>(string json)
+        {
+            return NetJSON.NetJSON.Deserialize<T>(json, _settings);
+        }
     }
 }

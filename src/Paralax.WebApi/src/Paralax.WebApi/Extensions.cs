@@ -7,6 +7,8 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Builder;
@@ -15,7 +17,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NetJSON; 
+using Open.Serialization.Json;
 using Paralax.WebApi.Exceptions;
 using Paralax.WebApi.Formatters;
 using Paralax.WebApi.Requests;
@@ -57,7 +59,7 @@ namespace Paralax.WebApi
             return handler.HandleAsync(request);
         }
 
-         public static IParalaxBuilder AddWebApi(this IParalaxBuilder builder, Action<IMvcCoreBuilder> configureMvc = null, string sectionName = SectionName)
+        public static IParalaxBuilder AddWebApi(this IParalaxBuilder builder, Action<IMvcCoreBuilder> configureMvc = null, IJsonSerializer jsonSerializer = null, string sectionName = SectionName)
         {
             if (string.IsNullOrWhiteSpace(sectionName))
             {
@@ -69,23 +71,41 @@ namespace Paralax.WebApi
                 return builder;
             }
 
-            // Add HttpContextAccessor and other needed services
+            // Setup JSON serializer with System.Text.Json if not provided
+            if (jsonSerializer is null)
+            {
+                var jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true,
+                    IgnoreNullValues = false,
+                    NumberHandling = JsonNumberHandling.AllowReadingFromString,
+                    Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+                };
+
+                var factory = new Open.Serialization.Json.System.JsonSerializerFactory(jsonSerializerOptions);
+                jsonSerializer = factory.GetSerializer();
+            }
+
+            builder.Services.AddSingleton(jsonSerializer);
             builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             builder.Services.AddSingleton(new WebApiEndpointDefinitions());
 
             var options = builder.GetOptions<WebApiOptions>(sectionName);
             builder.Services.AddSingleton(options);
+            _bindRequestFromRoute = options.BindRequestFromRoute;
 
             var mvcCoreBuilder = builder.Services
                 .AddLogging()
                 .AddMvcCore();
 
+            // Configure formatters using the injected IJsonSerializer
             mvcCoreBuilder.AddMvcOptions(o =>
             {
                 o.OutputFormatters.Clear();
-                o.OutputFormatters.Add(new JsonOutputFormatter()); 
+                o.OutputFormatters.Add(new JsonOutputFormatter(jsonSerializer)); // Use the new serializer
                 o.InputFormatters.Clear();
-                o.InputFormatters.Add(new JsonInputFormatter()); 
+                o.InputFormatters.Add(new JsonInputFormatter(jsonSerializer)); // Use the new serializer
             })
             .AddDataAnnotations()
             .AddApiExplorer()
@@ -122,9 +142,8 @@ namespace Paralax.WebApi
 
             try
             {
-                using var reader = new StreamReader(context.Request.Body);
-                var json = await reader.ReadToEndAsync();
-                var payload = NetJSON.NetJSON.Deserialize<T>(json);
+                var serializer = context.RequestServices.GetRequiredService<IJsonSerializer>();
+                var payload = await serializer.DeserializeAsync<T>(context.Request.Body);
 
                 if (_bindRequestFromRoute && HasRouteData(context.Request))
                 {
@@ -159,7 +178,6 @@ namespace Paralax.WebApi
             return builder;
         }
 
-
         public static T ReadQuery<T>(this HttpContext context) where T : class
         {
             var request = context.Request;
@@ -183,24 +201,26 @@ namespace Paralax.WebApi
                 {
                     if (!string.IsNullOrEmpty(key))
                     {
-                        values[key] = queryString[key];
+                        values.TryAdd(key, queryString[key]);
                     }
                 }
             }
 
-            // If there are no values, return a new instance of the object
+            var serializer = context.RequestServices.GetRequiredService<IJsonSerializer>();
             if (!values.Any())
             {
-                return null;
+                return serializer.Deserialize<T>(EmptyJsonObject);
             }
 
-            // Serialize the dictionary of values into JSON
-            var serialized = NetJSON.NetJSON.Serialize(values);
+            var serialized = serializer.Serialize(values.ToDictionary(k => k.Key, k => k.Value))
+                ?.Replace("\\\"", "\"")
+                .Replace("\"{", "{")
+                .Replace("}\"", "}")
+                .Replace("\"[", "[")
+                .Replace("]\"", "]");
 
-            // Deserialize the JSON back into the expected object type
-            return NetJSON.NetJSON.Deserialize<T>(serialized);
+            return serializer.Deserialize<T>(serialized);
         }
-
 
         public static Task Ok(this HttpResponse response, object data = null)
         {
@@ -211,11 +231,16 @@ namespace Paralax.WebApi
         public static Task Created(this HttpResponse response, string location = null, object data = null)
         {
             response.StatusCode = (int)HttpStatusCode.Created;
-            if (!string.IsNullOrWhiteSpace(location) && !response.Headers.ContainsKey(LocationHeader))
+             if (string.IsNullOrWhiteSpace(location))
+            {
+                return Task.CompletedTask;
+            }
+
+            if (!response.Headers.ContainsKey(LocationHeader))
             {
                 response.Headers.Add(LocationHeader, location);
             }
-            return data != null ? response.WriteJsonAsync(data) : Task.CompletedTask;
+            return data is null ? Task.CompletedTask : response.WriteJsonAsync(data);
         }
 
         public static Task Accepted(this HttpResponse response)
@@ -261,11 +286,20 @@ namespace Paralax.WebApi
         }
 
         public static async Task WriteJsonAsync<T>(this HttpResponse response, T value)
-        {
-            response.ContentType = JsonContentType;
-            var json = NetJSON.NetJSON.Serialize(value);
-            await response.WriteAsync(json);
-        }
+{
+    response.ContentType = JsonContentType;
+    var serializer = response.HttpContext.RequestServices.GetRequiredService<IJsonSerializer>();
+
+    // Serialize the object to a string
+    var serializedJson = serializer.Serialize(value);
+
+    // Log the serialized JSON to the console
+    Console.WriteLine($"Serialized JSON Response: {serializedJson}");
+
+    // Write the serialized JSON to the response body
+    await response.WriteAsync(serializedJson);
+}
+
 
         public static T Bind<T>(this T model, Expression<Func<T, object>> expression, object value)
             => model.Bind<T, object>(expression, value);

@@ -1,79 +1,115 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using NetJSON;
+using System.Text.Json;
 
 namespace Paralax.WebApi.Parsers
 {
-    // This JSON parser uses the NetJSON library for serialization/deserialization.
+    // JSON parser using System.Text.Json for serialization/deserialization.
     // It parses a JSON string into key-value pairs suitable for configuration or other dictionary-based representations.
     public class JsonParser
     {
         private readonly Dictionary<string, string> _data = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Stack<string> _stack = new();
 
         public IDictionary<string, string> Parse(string json)
         {
-            try
+            var jsonDocumentOptions = new JsonDocumentOptions
             {
-                // Deserialize the JSON into a Dictionary<string, object>
-                var deserializedData = NetJSON.NetJSON.Deserialize<Dictionary<string, object>>(json);
-                ProcessDictionary(deserializedData, string.Empty);
-            }
-            catch (Exception ex)
+                CommentHandling = JsonCommentHandling.Skip,  // Skip comments in JSON
+                AllowTrailingCommas = true                    // Allow trailing commas
+            };
+
+            // Parse the JSON string using System.Text.Json
+            using (JsonDocument doc = JsonDocument.Parse(json, jsonDocumentOptions))
             {
-                throw new FormatException($"Failed to parse JSON: {ex.Message}", ex);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    throw new FormatException($"Invalid top-level JSON element: {doc.RootElement.ValueKind}");
+                }
+
+                // Traverse the JSON structure
+                VisitElement(doc.RootElement);
             }
 
             return _data;
         }
 
-        private void ProcessDictionary(Dictionary<string, object> dict, string parentKey)
+        // Recursively visit each JSON element
+        private void VisitElement(JsonElement element)
         {
-            foreach (var kvp in dict)
-            {
-                var currentKey = string.IsNullOrEmpty(parentKey) ? kvp.Key : $"{parentKey}.{kvp.Key}";
+            var isEmpty = true;
 
-                if (kvp.Value is Dictionary<string, object> nestedDict)
-                {
-                    // Recursively process nested dictionaries
-                    ProcessDictionary(nestedDict, currentKey);
-                }
-                else if (kvp.Value is IList<object> list)
-                {
-                    // Process lists
-                    ProcessList(list, currentKey);
-                }
-                else
-                {
-                    // Add to the data dictionary
-                    if (_data.ContainsKey(currentKey))
-                    {
-                        throw new FormatException($"Duplicated key: {currentKey}");
-                    }
-                    _data[currentKey] = kvp.Value?.ToString(); 
-                }
+            // Process each property in the JSON object
+            foreach (JsonProperty property in element.EnumerateObject())
+            {
+                isEmpty = false;
+                EnterContext(property.Name);
+                VisitValue(property.Value);
+                ExitContext();
+            }
+
+            // Handle empty objects
+            if (isEmpty && _stack.Count > 0)
+            {
+                _data[_stack.Peek()] = null;
             }
         }
 
-        private void ProcessList(IList<object> list, string parentKey)
+        // Process each value in the JSON object or array
+        private void VisitValue(JsonElement value)
         {
-            for (int i = 0; i < list.Count; i++)
+            switch (value.ValueKind)
             {
-                var currentKey = $"{parentKey}[{i}]";
+                case JsonValueKind.Object:
+                    // If it's an object, visit its properties
+                    VisitElement(value);
+                    break;
 
-                if (list[i] is Dictionary<string, object> nestedDict)
-                {
-                    ProcessDictionary(nestedDict, currentKey);
-                }
-                else
-                {
-                    if (_data.ContainsKey(currentKey))
+                case JsonValueKind.Array:
+                    // If it's an array, process each element
+                    int index = 0;
+                    foreach (JsonElement arrayElement in value.EnumerateArray())
                     {
-                        throw new FormatException($"Duplicated key: {currentKey}");
+                        EnterContext(index.ToString());
+                        VisitValue(arrayElement);
+                        ExitContext();
+                        index++;
                     }
-                    _data[currentKey] = list[i]?.ToString(); 
-                }
+                    break;
+
+                case JsonValueKind.Number:
+                case JsonValueKind.String:
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                case JsonValueKind.Null:
+                    var key = _stack.Peek();
+
+                    if (_data.ContainsKey(key))
+                    {
+                        throw new FormatException($"Duplicated key: {key}");
+                    }
+
+                    // Store the value as a string
+                    _data[key] = value.ToString();
+                    break;
+
+                default:
+                    throw new FormatException($"Unsupported JSON token: {value.ValueKind}");
             }
+        }
+
+        // Enter a new context in the JSON structure (i.e., navigate deeper)
+        private void EnterContext(string context)
+        {
+            _stack.Push(_stack.Count > 0
+                ? _stack.Peek() + "." + context  // Use '.' to concatenate nested keys
+                : context);
+        }
+
+        // Exit the current context (i.e., navigate back up)
+        private void ExitContext()
+        {
+            _stack.Pop();
         }
     }
 }

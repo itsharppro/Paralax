@@ -1,12 +1,19 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Formatters;
-using NetJSON;
+using Open.Serialization.Json;
 
 namespace Paralax.WebApi.Formatters
 {
     internal class JsonOutputFormatter : IOutputFormatter
     {
+        private readonly IJsonSerializer _serializer;
+
+        public JsonOutputFormatter(IJsonSerializer serializer)
+        {
+            _serializer = serializer;
+        }
+
         public bool CanWriteResult(OutputFormatterCanWriteContext context)
         {
             return true;
@@ -27,8 +34,7 @@ namespace Paralax.WebApi.Formatters
                 return;
             }
 
-            var serializedJson = NetJSON.NetJSON.Serialize(context.Object);
-            await context.HttpContext.Response.WriteAsync(serializedJson);
+            await _serializer.SerializeAsync(context.HttpContext.Response.Body, context.Object);
         }
     }
 }
