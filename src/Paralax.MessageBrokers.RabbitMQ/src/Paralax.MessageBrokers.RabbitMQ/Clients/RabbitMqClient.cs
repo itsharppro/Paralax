@@ -9,7 +9,7 @@ namespace Paralax.MessageBrokers.RabbitMQ.Clients
 {
     internal sealed class RabbitMqClient : IRabbitMqClient
     {
-        private readonly object _lockObject = new();
+        private readonly Lock _lockObject = new();
         private const string EmptyContext = "{}";
         private readonly IConnection _connection;
         private readonly IContextProvider _contextProvider;
