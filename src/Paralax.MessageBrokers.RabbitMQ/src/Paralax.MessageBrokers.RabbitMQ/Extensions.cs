@@ -182,6 +182,20 @@ namespace Paralax.MessageBrokers.RabbitMQ
             }
         }
 
+         public static IParalaxBuilder AddExceptionToMessageMapper<T>(this IParalaxBuilder builder)
+            where T : class, IExceptionToMessageMapper
+        {
+            builder.Services.AddSingleton<IExceptionToMessageMapper, T>();
+            return builder;
+        }
+
+        public static IParalaxBuilder AddExceptionToFailedMessageMapper<T>(this IParalaxBuilder builder)
+            where T : class, IExceptionToFailedMessageMapper
+        {
+            builder.Services.AddSingleton<IExceptionToFailedMessageMapper, T>();
+            return builder;
+        }
+
         public static IBusSubscriber UseRabbitMq(this IApplicationBuilder app)
         {
             var messageSubscribersChannel = app.ApplicationServices.GetRequiredService<MessageSubscribersChannel>();
