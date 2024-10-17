@@ -73,6 +73,8 @@ namespace Paralax.MessageBrokers.RabbitMQ
                 builder.Services.AddSingleton<IConventionsBuilder, ConventionsBuilder>();
                 builder.Services.AddSingleton<IConventionsProvider, ConventionsProvider>();
                 builder.Services.AddSingleton<IConventionsRegistry, ConventionsRegistry>();
+                builder.Services.AddSingleton<MessageSubscribersChannel>();
+
 
                 builder.Services.AddSingleton<IRabbitMqPropertiesFactory, RabbitMqPropertiesFactory>();
                 builder.Services.AddSingleton<IRabbitMqChannelFactory, RabbitMqChannelFactory>();
