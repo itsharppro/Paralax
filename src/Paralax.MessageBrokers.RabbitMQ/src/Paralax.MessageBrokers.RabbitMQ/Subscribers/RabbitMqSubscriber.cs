@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
 {
     internal sealed class RabbitMqSubscriber : IBusSubscriber, IDisposable
@@ -16,10 +11,8 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
             _messageSubscribersChannel = messageSubscribersChannel;
         }
 
-        // Keep this method unchanged as per the IBusSubscriber interface
         public IBusSubscriber Subscribe<T>(Func<IServiceProvider, T, object, Task> handle) where T : class
         {
-            // Subscribe to all brokers by default
             foreach (var client in _clients)
             {
                 InternalSubscribe(client, handle);
@@ -27,7 +20,6 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
             return this;
         }
 
-        // Method to support subscribing to a specific broker (internally used)
         public IBusSubscriber SubscribeToBroker<T>(Func<IServiceProvider, T, object, Task> handle, string brokerName) where T : class
         {
             var client = GetClient(brokerName);
@@ -45,7 +37,6 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
             return this;
         }
 
-        // Unsubscribe method, unchanged
         public IBusSubscriber Unsubscribe<T>() where T : class
         {
             foreach (var client in _clients)
@@ -55,7 +46,6 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
             return this;
         }
 
-        // Internal unsubscribe
         private IBusSubscriber InternalUnsubscribe<T>(IRabbitMqClient client) where T : class
         {
             var type = typeof(T);
@@ -63,12 +53,11 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
             return this;
         }
 
-        // Method to get the correct client based on brokerName
         private IRabbitMqClient GetClient(string brokerName)
         {
             if (string.IsNullOrWhiteSpace(brokerName) || _clients.Count() == 1)
             {
-                return _clients.First(); // Default to the first client if no brokerName is provided or only one exists
+                return _clients.First();
             }
 
             var client = _clients.FirstOrDefault(c => (c as dynamic)?.ConnectionName == brokerName);

@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace Paralax.MessageBrokers.RabbitMQ.Publishers
 {
     internal sealed class RabbitMqPublisher : IBusPublisher
