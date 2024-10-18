@@ -32,44 +32,15 @@ namespace Paralax.MessageBrokers.RabbitMQ
                 sectionName = SectionName;
             }
 
-            var options = builder.GetOptions<RabbitMqOptions>(sectionName);
-            builder.Services.AddSingleton(options);
+            // Fetch the list of RabbitMqOptions (supports multiple configurations)
+            var optionsList = builder.GetOptions<List<RabbitMqOptions>>(sectionName);
 
-            if (!builder.TryRegister(RegistryName))
+            if (optionsList == null || !optionsList.Any())
             {
-                return builder;
+                throw new ArgumentException("RabbitMQ configurations are not specified.");
             }
 
-            if (options.HostNames == null || !options.HostNames.Any())
-            {
-                throw new ArgumentException("RabbitMQ hostnames are not specified.", nameof(options.HostNames));
-            }
-
-            ILogger<IRabbitMqClient> logger;
-            using (var serviceProvider = builder.Services.BuildServiceProvider())
-            {
-                logger = serviceProvider.GetRequiredService<ILogger<IRabbitMqClient>>();
-            }
-
-            builder.Services.AddSingleton<IContextProvider, ContextProvider>();
-            builder.Services.AddSingleton<ICorrelationContextAccessor>(new CorrelationContextAccessor());
-            builder.Services.AddSingleton<IMessagePropertiesAccessor, MessagePropertiesAccessor>();
-            builder.Services.AddSingleton<IConventionsBuilder, ConventionsBuilder>();
-            builder.Services.AddSingleton<IConventionsProvider, ConventionsProvider>();
-            builder.Services.AddSingleton<IConventionsRegistry, ConventionsRegistry>();
-            builder.Services.AddSingleton<IRabbitMqClient, RabbitMqClient>();
-            builder.Services.AddSingleton<IBusPublisher, RabbitMqPublisher>();
-            builder.Services.AddSingleton<IBusSubscriber, RabbitMqSubscriber>();
-            builder.Services.AddSingleton<MessageSubscribersChannel>();
-            builder.Services.AddTransient<RabbitMqExchangeInitializer>();
-            builder.Services.AddHostedService<RabbitMqBackgroundService>();
-            builder.AddInitializer<RabbitMqExchangeInitializer>();
-
-            // Add RabbitMQ properties and channel factories
-            builder.Services.AddSingleton<IRabbitMqPropertiesFactory, RabbitMqPropertiesFactory>();
-            builder.Services.AddSingleton<IRabbitMqChannelFactory, RabbitMqChannelFactory>();
-
-            // Use custom or default serializer
+            // Add the RabbitMQ serializer as singleton
             if (serializer != null)
             {
                 builder.Services.AddSingleton(serializer);
@@ -79,28 +50,70 @@ namespace Paralax.MessageBrokers.RabbitMQ
                 builder.Services.AddSingleton<IRabbitMqSerializer, NetJsonRabbitMqSerializer>();
             }
 
-            // Register RabbitMQ plugins
-            var pluginsRegistry = new RabbitMqPluginsRegistry();
-            builder.Services.AddSingleton<IRabbitMqPluginsRegistryAccessor>(pluginsRegistry);
-            builder.Services.AddSingleton<IRabbitMqPluginsExecutor, RabbitMqPluginsExecutor>();
-            plugins?.Invoke(pluginsRegistry);
+            // Iterate over each RabbitMQ configuration
+            foreach (var options in optionsList)
+            {
+                // Register options and necessary services for each RabbitMQ instance
+                builder.Services.AddSingleton(options);
 
-            // Configure connection factory
-            var connectionFactory = ConfigureConnectionFactory(options);
-            ConfigureSsl(connectionFactory, options, logger);
-            connectionFactoryConfigurator?.Invoke(connectionFactory);
+                if (!builder.TryRegister(RegistryName))
+                {
+                    return builder;
+                }
 
-            // Create connections for producers and consumers
-            var consumerConnection = connectionFactory.CreateConnection(options.HostNames.ToList(), $"{options.ConnectionName}_consumer");
-            var producerConnection = connectionFactory.CreateConnection(options.HostNames.ToList(), $"{options.ConnectionName}_producer");
+                if (options.HostNames == null || !options.HostNames.Any())
+                {
+                    throw new ArgumentException("RabbitMQ hostnames are not specified.", nameof(options.HostNames));
+                }
 
-            // Register connections as singletons
-            builder.Services.AddSingleton(new ConsumerConnection(consumerConnection));
-            builder.Services.AddSingleton(new ProducerConnection(producerConnection));
+                // Add common RabbitMQ dependencies
+                builder.Services.AddSingleton<IContextProvider, ContextProvider>();
+                builder.Services.AddSingleton<ICorrelationContextAccessor>(new CorrelationContextAccessor());
+                builder.Services.AddSingleton<IMessagePropertiesAccessor, MessagePropertiesAccessor>();
+                builder.Services.AddSingleton<IConventionsBuilder, ConventionsBuilder>();
+                builder.Services.AddSingleton<IConventionsProvider, ConventionsProvider>();
+                builder.Services.AddSingleton<IConventionsRegistry, ConventionsRegistry>();
+                builder.Services.AddSingleton<MessageSubscribersChannel>();
 
-            // Register plugins as transient services
-            ((IRabbitMqPluginsRegistryAccessor)pluginsRegistry).Get().ToList().ForEach(p =>
-                builder.Services.AddTransient(p.PluginType));
+
+                builder.Services.AddSingleton<IRabbitMqPropertiesFactory, RabbitMqPropertiesFactory>();
+                builder.Services.AddSingleton<IRabbitMqChannelFactory, RabbitMqChannelFactory>();
+
+                // Register RabbitMQ plugins
+                var pluginsRegistry = new RabbitMqPluginsRegistry();
+                builder.Services.AddSingleton<IRabbitMqPluginsRegistryAccessor>(pluginsRegistry);
+                builder.Services.AddSingleton<IRabbitMqPluginsExecutor, RabbitMqPluginsExecutor>();
+                plugins?.Invoke(pluginsRegistry);
+
+                // Configure connection factory
+                var connectionFactory = ConfigureConnectionFactory(options);
+                connectionFactoryConfigurator?.Invoke(connectionFactory);
+
+                // Create connections for producers and consumers
+                var consumerConnection = connectionFactory.CreateConnection(options.HostNames.ToList(), $"{options.ConnectionName}_consumer");
+                var producerConnection = connectionFactory.CreateConnection(options.HostNames.ToList(), $"{options.ConnectionName}_producer");
+
+                // Register the connections
+                builder.Services.AddSingleton(new ConsumerConnection(consumerConnection));
+                builder.Services.AddSingleton(new ProducerConnection(producerConnection));
+
+                // Register the RabbitMQ client
+                builder.Services.AddSingleton<IRabbitMqClient>(sp => new RabbitMqClient(
+                    sp.GetRequiredService<ProducerConnection>(),
+                    sp.GetRequiredService<IContextProvider>(),
+                    sp.GetRequiredService<IRabbitMqSerializer>(),
+                    options,
+                    sp.GetRequiredService<ILogger<RabbitMqClient>>()
+                ));
+            }
+
+            // Register other services that need to be shared
+            builder.Services.AddSingleton<IBusPublisher, RabbitMqPublisher>();
+            builder.Services.AddSingleton<IBusSubscriber, RabbitMqSubscriber>();
+            builder.Services.AddSingleton<MessageSubscribersChannel>();
+            builder.Services.AddTransient<RabbitMqExchangeInitializer>();
+            builder.Services.AddHostedService<RabbitMqBackgroundService>();
+            builder.AddInitializer<RabbitMqExchangeInitializer>();
 
             return builder;
         }
@@ -130,7 +143,7 @@ namespace Paralax.MessageBrokers.RabbitMQ
             };
         }
 
-        private static void ConfigureSsl(ConnectionFactory connectionFactory, RabbitMqOptions options, ILogger<IRabbitMqClient> logger)
+        private static void ConfigureSsl(ConnectionFactory connectionFactory, RabbitMqOptions options, ILogger<RabbitMqClient> logger)
         {
             if (options.Ssl == null || string.IsNullOrWhiteSpace(options.Ssl.ServerName))
             {
@@ -171,7 +184,7 @@ namespace Paralax.MessageBrokers.RabbitMQ
             }
         }
 
-        public static IParalaxBuilder AddExceptionToMessageMapper<T>(this IParalaxBuilder builder)
+         public static IParalaxBuilder AddExceptionToMessageMapper<T>(this IParalaxBuilder builder)
             where T : class, IExceptionToMessageMapper
         {
             builder.Services.AddSingleton<IExceptionToMessageMapper, T>();
@@ -186,6 +199,13 @@ namespace Paralax.MessageBrokers.RabbitMQ
         }
 
         public static IBusSubscriber UseRabbitMq(this IApplicationBuilder app)
-            => new RabbitMqSubscriber(app.ApplicationServices.GetRequiredService<MessageSubscribersChannel>());
+        {
+            var messageSubscribersChannel = app.ApplicationServices.GetRequiredService<MessageSubscribersChannel>();
+
+            // Get all RabbitMQ clients and inject them into RabbitMqSubscriber
+            var clients = app.ApplicationServices.GetServices<IRabbitMqClient>();
+
+            return new RabbitMqSubscriber(clients, messageSubscribersChannel);
+        }
     }
 }

@@ -3,6 +3,8 @@ namespace Paralax.MessageBrokers.RabbitMQ
     public class RabbitMqOptions
     {
         // Connection and Authentication
+        public string BrokerName { get; set; } 
+        
         public string ConnectionName { get; set; }
         public IEnumerable<string> HostNames { get; set; }
         public int Port { get; set; } = 5672;
