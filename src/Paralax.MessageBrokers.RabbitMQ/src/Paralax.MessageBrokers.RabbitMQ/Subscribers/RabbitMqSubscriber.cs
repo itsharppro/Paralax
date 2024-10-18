@@ -47,7 +47,6 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
         // Helper method to get the correct RabbitMQ client for the given broker name
         private IRabbitMqClient GetClient(string brokerName)
         {
-            // Use the first client if no brokerName is provided or there is only one broker
             if (string.IsNullOrWhiteSpace(brokerName) || _clients.Count() == 1)
             {
                 return _clients.First();
