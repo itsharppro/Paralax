@@ -11,6 +11,7 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
             _messageSubscribersChannel = messageSubscribersChannel;
         }
 
+        // Subscribe method: Subscribes to the default or first broker
         public IBusSubscriber Subscribe<T>(Func<IServiceProvider, T, object, Task> handle) where T : class
         {
             foreach (var client in _clients)
@@ -20,6 +21,7 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
             return this;
         }
 
+        // Modified method: Subscribe to a specific broker or default if brokerName is null
         public IBusSubscriber SubscribeToBroker<T>(Func<IServiceProvider, T, object, Task> handle, string brokerName) where T : class
         {
             var client = GetClient(brokerName);
@@ -37,24 +39,10 @@ namespace Paralax.MessageBrokers.RabbitMQ.Subscribers
             return this;
         }
 
-        public IBusSubscriber Unsubscribe<T>() where T : class
-        {
-            foreach (var client in _clients)
-            {
-                InternalUnsubscribe<T>(client);
-            }
-            return this;
-        }
-
-        private IBusSubscriber InternalUnsubscribe<T>(IRabbitMqClient client) where T : class
-        {
-            var type = typeof(T);
-            _messageSubscribersChannel.Writer.TryWrite(MessageSubscriber.Unsubscribe(type));
-            return this;
-        }
-
+        // Helper method to get the correct RabbitMQ client for a specific broker
         private IRabbitMqClient GetClient(string brokerName)
         {
+            // Use the first client if brokerName is not provided or there is only one broker
             if (string.IsNullOrWhiteSpace(brokerName) || _clients.Count() == 1)
             {
                 return _clients.First();
