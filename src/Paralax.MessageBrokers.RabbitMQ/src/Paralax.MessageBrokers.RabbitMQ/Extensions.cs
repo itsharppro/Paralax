@@ -75,6 +75,13 @@ namespace Paralax.MessageBrokers.RabbitMQ
                 builder.Services.AddSingleton<IConventionsRegistry, ConventionsRegistry>();
                 builder.Services.AddSingleton<MessageSubscribersChannel>();
 
+                builder.Services.AddSingleton<IBusPublisher, RabbitMqPublisher>();
+                builder.Services.AddSingleton<IBusSubscriber, RabbitMqSubscriber>();
+                builder.Services.AddSingleton<MessageSubscribersChannel>();
+                builder.Services.AddTransient<RabbitMqExchangeInitializer>();
+                builder.Services.AddHostedService<RabbitMqBackgroundService>();
+                builder.AddInitializer<RabbitMqExchangeInitializer>();
+
 
                 builder.Services.AddSingleton<IRabbitMqPropertiesFactory, RabbitMqPropertiesFactory>();
                 builder.Services.AddSingleton<IRabbitMqChannelFactory, RabbitMqChannelFactory>();
@@ -108,12 +115,7 @@ namespace Paralax.MessageBrokers.RabbitMQ
             }
 
             // Register other services that need to be shared
-            builder.Services.AddSingleton<IBusPublisher, RabbitMqPublisher>();
-            builder.Services.AddSingleton<IBusSubscriber, RabbitMqSubscriber>();
-            builder.Services.AddSingleton<MessageSubscribersChannel>();
-            builder.Services.AddTransient<RabbitMqExchangeInitializer>();
-            builder.Services.AddHostedService<RabbitMqBackgroundService>();
-            builder.AddInitializer<RabbitMqExchangeInitializer>();
+            
 
             return builder;
         }
@@ -202,8 +204,12 @@ namespace Paralax.MessageBrokers.RabbitMQ
         {
             var messageSubscribersChannel = app.ApplicationServices.GetRequiredService<MessageSubscribersChannel>();
 
-            // Get all RabbitMQ clients and inject them into RabbitMqSubscriber
             var clients = app.ApplicationServices.GetServices<IRabbitMqClient>();
+
+            if (!clients.Any())
+            {
+                throw new InvalidOperationException("No RabbitMQ clients have been registered.");
+            }
 
             return new RabbitMqSubscriber(clients, messageSubscribersChannel);
         }
