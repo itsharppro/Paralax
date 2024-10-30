@@ -7,26 +7,36 @@ using Paralax.gRPC.Builders;
 using Paralax.gRPC.Protobuf;
 using Paralax.gRPC.Protobuf.Utilities;
 using Paralax.Health;
-using Paralax.gRPC.Utils; 
+using Paralax.gRPC.Utils;
 using System.Diagnostics;
+using Microsoft.Extensions.Options;
 
-namespace Paralax.gRPC.Extensions
+namespace Paralax.gRPC
 {
     public static class GrpcExtensions
     {
-        public static IParalaxBuilder AddGrpc(this IParalaxBuilder builder, Action<GrpcOptionsBuilder> configureOptions)
-        {
-            var optionsBuilder = new GrpcOptionsBuilder();
-            configureOptions?.Invoke(optionsBuilder);
-            var grpcOptions = optionsBuilder.Build();
+        private const string GrpcOptionsSection = "GrpcOptions";
 
-            builder.Services.AddSingleton(grpcOptions);
+        public static IParalaxBuilder AddGrpc(this IParalaxBuilder builder, IConfiguration configuration, Action<GrpcOptionsBuilder> configureOptions = null)
+        {
+            builder.Services.Configure<GrpcOptions>(configuration.GetSection(GrpcOptionsSection));
+
+            if (configureOptions != null)
+            {
+                var optionsBuilder = new GrpcOptionsBuilder();
+                configureOptions.Invoke(optionsBuilder);
+                var grpcOptionsBuilt = optionsBuilder.Build(); 
+                builder.Services.AddSingleton(grpcOptionsBuilt);
+            }
 
             builder.Services.AddCommonProtobufServices();
 
             builder.Services.AddSingleton<UptimeService>();
             builder.Services.AddSingleton<CpuUsageService>();
             builder.Services.AddSingleton<MemoryUsageService>();
+
+            var serviceProvider = builder.Services.BuildServiceProvider();
+            var grpcOptions = serviceProvider.GetRequiredService<IOptions<GrpcOptions>>().Value;
 
             builder.Services.Configure<KestrelServerOptions>(options =>
             {
@@ -42,13 +52,19 @@ namespace Paralax.gRPC.Extensions
                 options.MaxSendMessageSize = grpcOptions.MaxSendMessageSize;
             });
 
+            if (grpcOptions.EnableReflection)
+            {
+                builder.Services.AddGrpcReflection();
+            }
+
             return builder;
         }
 
         public static IApplicationBuilder UseGrpc(this IApplicationBuilder app, Action<IEndpointRouteBuilder> configureEndpoints)
         {
             using var scope = app.ApplicationServices.CreateScope();
-            var grpcOptions = scope.ServiceProvider.GetRequiredService<GrpcOptions>();
+            
+            var grpcOptions = scope.ServiceProvider.GetRequiredService<IOptions<GrpcOptions>>().Value;
 
             app.UseRouting();
 
@@ -68,7 +84,7 @@ namespace Paralax.gRPC.Extensions
         public static HealthCheckResponse CreateHealthCheckResponse(IServiceProvider serviceProvider, IConfiguration configuration)
         {
             var grpcOptions = new GrpcOptions();
-            configuration.GetSection("GrpcOptions").Bind(grpcOptions);
+            configuration.GetSection(GrpcOptionsSection).Bind(grpcOptions);
 
             var uptimeService = serviceProvider.GetRequiredService<UptimeService>();
             var cpuUsageService = serviceProvider.GetRequiredService<CpuUsageService>();
