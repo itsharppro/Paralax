@@ -11,7 +11,7 @@ using Paralax.gRPC.Utils;
 using System.Diagnostics;
 using Microsoft.Extensions.Options;
 
-namespace Paralax.gRPC.Extensions
+namespace Paralax.gRPC
 {
     public static class GrpcExtensions
     {
@@ -25,8 +25,8 @@ namespace Paralax.gRPC.Extensions
             {
                 var optionsBuilder = new GrpcOptionsBuilder();
                 configureOptions.Invoke(optionsBuilder);
-                var grpcOptions = optionsBuilder.Build();
-                builder.Services.AddSingleton(grpcOptions);
+                var grpcOptionsBuilt = optionsBuilder.Build(); 
+                builder.Services.AddSingleton(grpcOptionsBuilt);
             }
 
             builder.Services.AddCommonProtobufServices();
@@ -35,11 +35,11 @@ namespace Paralax.gRPC.Extensions
             builder.Services.AddSingleton<CpuUsageService>();
             builder.Services.AddSingleton<MemoryUsageService>();
 
+            var serviceProvider = builder.Services.BuildServiceProvider();
+            var grpcOptions = serviceProvider.GetRequiredService<IOptions<GrpcOptions>>().Value;
+
             builder.Services.Configure<KestrelServerOptions>(options =>
             {
-                var serviceProvider = builder.Services.BuildServiceProvider();
-                var grpcOptions = serviceProvider.GetRequiredService<IOptions<GrpcOptions>>().Value;
-
                 options.ListenAnyIP(grpcOptions.Port, listenOptions =>
                 {
                     listenOptions.Protocols = HttpProtocols.Http2;
@@ -48,10 +48,14 @@ namespace Paralax.gRPC.Extensions
 
             builder.Services.AddGrpc(options =>
             {
-                var grpcOptions = builder.Services.BuildServiceProvider().GetRequiredService<IOptions<GrpcOptions>>().Value;
                 options.MaxReceiveMessageSize = grpcOptions.MaxReceiveMessageSize;
                 options.MaxSendMessageSize = grpcOptions.MaxSendMessageSize;
             });
+
+            if (grpcOptions.EnableReflection)
+            {
+                builder.Services.AddGrpcReflection();
+            }
 
             return builder;
         }
