@@ -11,9 +11,17 @@ namespace Paralax.gRPC.Builders
             _options = new GrpcOptions();
         }
 
-        public GrpcOptionsBuilder UsePort(int port)
+        // Set the port for REST API (HTTP/1.1)
+        public GrpcOptionsBuilder UseRestPort(int restPort)
         {
-            _options.Port = port;
+            _options.RestPort = restPort;
+            return this;
+        }
+
+        // Set the port for gRPC service (HTTP/2)
+        public GrpcOptionsBuilder UseGrpcPort(int grpcPort)
+        {
+            _options.GrpcPort = grpcPort;
             return this;
         }
 

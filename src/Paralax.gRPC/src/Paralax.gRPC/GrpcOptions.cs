@@ -2,7 +2,8 @@ namespace Paralax.gRPC
 {
     public class GrpcOptions
     {
-        public int Port { get; set; } = 5001;
+        public int RestPort { get; set; } = 5000;  
+        public int GrpcPort { get; set; } = 5001;
         public bool EnableReflection { get; set; } = true;
         public int MaxReceiveMessageSize { get; set; } = 4 * 1024 * 1024; 
         public int MaxSendMessageSize { get; set; } = 4 * 1024 * 1024; 

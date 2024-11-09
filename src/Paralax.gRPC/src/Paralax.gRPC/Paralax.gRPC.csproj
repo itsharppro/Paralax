@@ -38,7 +38,8 @@
     <PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />
     <PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.66.0" />
     <PackageReference Include="Paralax" Version="*" />
-    <PackageReference Include="Paralax.gRPC.Protobuf" Version="*" />
+    <!-- <PackageReference Include="Paralax.gRPC.Protobuf" Version="*" />
+    <ProjectReference Include="../../../Paralax.gRPC.Protobuf/src/Paralax.gRPC.Protobuf/Paralax.gRPC.Protobuf.csproj" /> -->
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
   </ItemGroup>
 
