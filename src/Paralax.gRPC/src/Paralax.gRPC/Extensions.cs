@@ -1,109 +1,102 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Routing;
 using Paralax.gRPC.Builders;
-using Paralax.gRPC.Protobuf;
-using Paralax.gRPC.Protobuf.Utilities;
-using Paralax.Health;
-using Paralax.gRPC.Utils;
+// using Paralax.gRPC.Protobuf;
+// using Paralax.gRPC.Protobuf.Utilities;
+// using Paralax.Health;
 using System.Diagnostics;
-using Microsoft.Extensions.Options;
+using Paralax.gRPC.Utils;
 
 namespace Paralax.gRPC
 {
-    public static class GrpcExtensions
+    public static class Extensions
     {
         private const string GrpcOptionsSection = "GrpcOptions";
 
-        public static IParalaxBuilder AddGrpc(this IParalaxBuilder builder, IConfiguration configuration, Action<GrpcOptionsBuilder> configureOptions = null)
+        public static IParalaxBuilder AddParalaxGrpc(this IParalaxBuilder builder, string sectionName = GrpcOptionsSection, Action<GrpcOptionsBuilder>? configureOptions = null)
         {
-            builder.Services.Configure<GrpcOptions>(configuration.GetSection(GrpcOptionsSection));
-
-            if (configureOptions != null)
+            var optionsList = builder.GetOptions<List<GrpcOptions>>(sectionName) ?? new List<GrpcOptions>
             {
-                var optionsBuilder = new GrpcOptionsBuilder();
-                configureOptions.Invoke(optionsBuilder);
-                var grpcOptionsBuilt = optionsBuilder.Build(); 
-                builder.Services.AddSingleton(grpcOptionsBuilt);
-            }
-
-            builder.Services.AddCommonProtobufServices();
-
-            builder.Services.AddSingleton<UptimeService>();
-            builder.Services.AddSingleton<CpuUsageService>();
-            builder.Services.AddSingleton<MemoryUsageService>();
-
-            var serviceProvider = builder.Services.BuildServiceProvider();
-            var grpcOptions = serviceProvider.GetRequiredService<IOptions<GrpcOptions>>().Value;
-
-            builder.Services.Configure<KestrelServerOptions>(options =>
-            {
-                options.ListenAnyIP(grpcOptions.Port, listenOptions =>
+                new GrpcOptions
                 {
-                    listenOptions.Protocols = HttpProtocols.Http2;
+                    RestPort = 5045,
+                    GrpcPort = 7146,
+                    EnableReflection = true,
+                    MaxReceiveMessageSize = 8 * 1024 * 1024,
+                    MaxSendMessageSize = 8 * 1024 * 1024,
+                    ServiceName = "DefaultService",
+                    ServiceVersion = "1.0.0",
+                    Environment = "Production"
+                }
+            };
+
+            foreach (var options in optionsList)
+            {
+                builder.Services.AddSingleton(options);
+
+                configureOptions?.Invoke(new GrpcOptionsBuilder());
+
+                // builder.Services.AddCommonProtobufServices();
+                builder.Services.AddSingleton<UptimeService>();
+                builder.Services.AddSingleton<CpuUsageService>();
+                builder.Services.AddSingleton<MemoryUsageService>();
+
+                builder.Services.Configure<KestrelServerOptions>(kestrelOptions =>
+                {
+                    kestrelOptions.ListenAnyIP(options.RestPort, listenOptions =>
+                    {
+                        listenOptions.Protocols = HttpProtocols.Http1;
+                    });
+                    kestrelOptions.ListenAnyIP(options.GrpcPort, listenOptions =>
+                    {
+                        listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
+                    });
                 });
-            });
 
-            builder.Services.AddGrpc(options =>
-            {
-                options.MaxReceiveMessageSize = grpcOptions.MaxReceiveMessageSize;
-                options.MaxSendMessageSize = grpcOptions.MaxSendMessageSize;
-            });
+                builder.Services.AddGrpc(grpcOptions =>
+                {
+                    grpcOptions.MaxReceiveMessageSize = options.MaxReceiveMessageSize;
+                    grpcOptions.MaxSendMessageSize = options.MaxSendMessageSize;
+                });
 
-            if (grpcOptions.EnableReflection)
-            {
-                builder.Services.AddGrpcReflection();
+                if (options.EnableReflection)
+                {
+                    builder.Services.AddGrpcReflection();
+                }
             }
 
             return builder;
         }
 
-        public static IApplicationBuilder UseGrpc(this IApplicationBuilder app, Action<IEndpointRouteBuilder> configureEndpoints)
+        // Extension for IApplicationBuilder to configure gRPC endpoints
+        public static IApplicationBuilder UseParalaxGrpc(this IApplicationBuilder app, Action<IEndpointRouteBuilder>? configureEndpoints = null)
         {
-            using var scope = app.ApplicationServices.CreateScope();
-            
-            var grpcOptions = scope.ServiceProvider.GetRequiredService<IOptions<GrpcOptions>>().Value;
+            var grpcOptionsList = app.ApplicationServices.GetServices<GrpcOptions>();
+
+            if (grpcOptionsList == null || !grpcOptionsList.Any())
+            {
+                throw new InvalidOperationException("No GrpcOptions have been registered.");
+            }
 
             app.UseRouting();
-
             app.UseEndpoints(endpoints =>
             {
-                configureEndpoints(endpoints);
+                configureEndpoints?.Invoke(endpoints);
 
-                if (grpcOptions.EnableReflection)
+                foreach (var grpcOptions in grpcOptionsList)
                 {
-                    endpoints.MapGrpcReflectionService();
+                    if (grpcOptions.EnableReflection)
+                    {
+                        endpoints.MapGrpcReflectionService();
+                    }
                 }
             });
 
             return app;
-        }
-
-        public static HealthCheckResponse CreateHealthCheckResponse(IServiceProvider serviceProvider, IConfiguration configuration)
-        {
-            var grpcOptions = new GrpcOptions();
-            configuration.GetSection(GrpcOptionsSection).Bind(grpcOptions);
-
-            var uptimeService = serviceProvider.GetRequiredService<UptimeService>();
-            var cpuUsageService = serviceProvider.GetRequiredService<CpuUsageService>();
-            var memoryUsageService = serviceProvider.GetRequiredService<MemoryUsageService>();
-
-            var status = GrpcUtility.CreateSuccessStatus("Service is healthy.");
-
-            return new HealthCheckResponse
-            {
-                Status = status,
-                ServiceName = grpcOptions.ServiceName,
-                ServiceVersion = grpcOptions.ServiceVersion,
-                Environment = grpcOptions.Environment,
-                UptimeSeconds = uptimeService.GetUptimeSeconds(),
-                CpuUsagePercent = cpuUsageService.GetCpuUsage(),
-                MemoryUsagePercent = memoryUsageService.GetMemoryUsage(),
-                ActiveThreads = Process.GetCurrentProcess().Threads.Count,
-                Metadata = MetadataUtility.CreateMetadata(grpcOptions.ServiceName)
-            };
         }
     }
 }

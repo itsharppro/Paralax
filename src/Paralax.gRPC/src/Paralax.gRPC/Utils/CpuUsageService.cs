@@ -6,7 +6,7 @@ namespace Paralax.gRPC.Utils
 {
     public sealed class CpuUsageService
     {
-        private readonly TimeSpan _interval = TimeSpan.FromMilliseconds(500); // Interval to sample CPU usage
+        private readonly TimeSpan _interval = TimeSpan.FromMilliseconds(500); 
         private readonly Process _process;
 
         public CpuUsageService()
