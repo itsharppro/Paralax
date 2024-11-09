@@ -104,7 +104,6 @@ namespace Paralax.MessageBrokers.Outbox.Mongo.Core
                 return;
             }
 
-            // Serialize message and context to JSON and then encode to byte array
             var serializedMessageContext = messageContext == null
                 ? Array.Empty<byte>()
                 : Encoding.UTF8.GetBytes(NetJSON.NetJSON.Serialize(messageContext));
