@@ -7,9 +7,9 @@ namespace Paralax.gRPC.Protobuf
     {
         public static IServiceCollection AddCommonProtobufServices(this IServiceCollection services)
         {
-            services.AddSingleton<Metadata>();
-            services.AddSingleton<Error>();
-            services.AddSingleton<Status>();
+            services.AddScoped<Metadata>();
+            services.AddScoped<Error>();
+            services.AddScoped<Status>();
             return services;
         }
     }
