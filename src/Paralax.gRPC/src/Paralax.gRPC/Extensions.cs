@@ -89,7 +89,6 @@ namespace Paralax.gRPC
 
                 foreach (var grpcOptions in grpcOptionsList)
                 {
-                    // Enable gRPC reflection if configured
                     if (grpcOptions.EnableReflection)
                     {
                         endpoints.MapGrpcReflectionService();
