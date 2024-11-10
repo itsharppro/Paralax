@@ -37,6 +37,7 @@
 
     <PackageReference Include="MessagePack" Version="2.5.172" />
     <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
+    <PackageReference Include="NetJSON" Version="1.4.4" />
     <PackageReference Include="Paralax" Version="*" />
     <!-- <PackageReference Include="Paralax.MessageBrokers.Outbox" Version="*" /> -->
     <PackageReference Include="Paralax.Persistence.MongoDB" Version="*" />

@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Paralax.MessageBrokers.Outbox.Messages;
 using Paralax.Persistence.MongoDB;
 using MongoDB.Driver;
-using MessagePack;
+using NetJSON;
 
 namespace Paralax.MessageBrokers.Outbox.Mongo.Core
 {
@@ -43,13 +44,13 @@ namespace Paralax.MessageBrokers.Outbox.Mongo.Core
 
             if (string.IsNullOrWhiteSpace(messageId))
             {
-                throw new ArgumentException("Message id to be processed cannot be empty.", nameof(messageId));
+                throw new ArgumentException("Message ID to be processed cannot be empty.", nameof(messageId));
             }
 
-            _logger.LogTrace($"Received a message with id: '{messageId}' to be processed.");
+            _logger.LogTrace($"Received a message with ID: '{messageId}' to be processed.");
             if (await _inboxRepository.ExistsAsync(m => m.Id == messageId))
             {
-                _logger.LogTrace($"Message with id: '{messageId}' was already processed.");
+                _logger.LogTrace($"Message with ID: '{messageId}' was already processed.");
                 return;
             }
 
@@ -62,7 +63,7 @@ namespace Paralax.MessageBrokers.Outbox.Mongo.Core
 
             try
             {
-                _logger.LogTrace($"Processing a message with id: '{messageId}'...");
+                _logger.LogTrace($"Processing a message with ID: '{messageId}'...");
                 await handler();
                 await _inboxRepository.AddAsync(new InboxMessage
                 {
@@ -70,17 +71,17 @@ namespace Paralax.MessageBrokers.Outbox.Mongo.Core
                     ProcessedAt = DateTime.UtcNow
                 });
 
-                if (session is not null)
+                if (session != null)
                 {
                     await session.CommitTransactionAsync();
                 }
 
-                _logger.LogTrace($"Processed a message with id: '{messageId}'.");
+                _logger.LogTrace($"Processed a message with ID: '{messageId}'.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"There was an error when processing a message with id: '{messageId}'.");
-                if (session is not null)
+                _logger.LogError(ex, $"Error processing message with ID: '{messageId}'.");
+                if (session != null)
                 {
                     await session.AbortTransactionAsync();
                 }
@@ -99,9 +100,17 @@ namespace Paralax.MessageBrokers.Outbox.Mongo.Core
         {
             if (!Enabled)
             {
-                _logger.LogWarning("Outbox is disabled, outgoing messages won't be saved into the storage.");
+                _logger.LogWarning("Outbox is disabled, outgoing messages won't be saved into storage.");
                 return;
             }
+
+            var serializedMessageContext = messageContext == null
+                ? Array.Empty<byte>()
+                : Encoding.UTF8.GetBytes(NetJSON.NetJSON.Serialize(messageContext));
+
+            var serializedMessage = message == null
+                ? Array.Empty<byte>()
+                : Encoding.UTF8.GetBytes(NetJSON.NetJSON.Serialize(message));
 
             var outboxMessage = new OutboxMessage
             {
@@ -109,21 +118,16 @@ namespace Paralax.MessageBrokers.Outbox.Mongo.Core
                 OriginatedMessageId = originatedMessageId,
                 CorrelationId = correlationId,
                 SpanContext = spanContext,
-                SerializedMessageContext = messageContext == null 
-                    ? Array.Empty<byte>() 
-                    : MessagePackSerializer.Serialize(messageContext),
+                SerializedMessageContext = serializedMessageContext,
                 MessageContextType = messageContext?.GetType().AssemblyQualifiedName,
-                Headers = (Dictionary<string, object>)headers,
-                SerializedMessage = message == null 
-                    ? Array.Empty<byte>() 
-                    : MessagePackSerializer.Serialize(message), 
+                Headers = headers != null ? new Dictionary<string, object>(headers) : null,
+                SerializedMessage = serializedMessage,
                 MessageType = message?.GetType().AssemblyQualifiedName,
                 SentAt = DateTime.UtcNow
             };
 
             await _outboxRepository.AddAsync(outboxMessage);
         }
-
 
         async Task<IReadOnlyList<OutboxMessage>> IMessageOutboxAccessor.GetUnsentAsync()
         {
@@ -133,18 +137,20 @@ namespace Paralax.MessageBrokers.Outbox.Mongo.Core
                 if (!string.IsNullOrWhiteSpace(om.MessageContextType))
                 {
                     var messageContextType = Type.GetType(om.MessageContextType);
-                    if (messageContextType != null)
+                    if (messageContextType != null && om.SerializedMessageContext.Length > 0)
                     {
-                        om.MessageContext = MessagePackSerializer.Deserialize(messageContextType, om.SerializedMessageContext);
+                        var contextJson = Encoding.UTF8.GetString(om.SerializedMessageContext);
+                        om.MessageContext = NetJSON.NetJSON.Deserialize(messageContextType, contextJson);
                     }
                 }
 
                 if (!string.IsNullOrWhiteSpace(om.MessageType))
                 {
                     var messageType = Type.GetType(om.MessageType);
-                    if (messageType != null)
+                    if (messageType != null && om.SerializedMessage.Length > 0)
                     {
-                        om.Message = MessagePackSerializer.Deserialize(messageType, om.SerializedMessage);
+                        var messageJson = Encoding.UTF8.GetString(om.SerializedMessage);
+                        om.Message = NetJSON.NetJSON.Deserialize(messageType, messageJson);
                     }
                 }
 
