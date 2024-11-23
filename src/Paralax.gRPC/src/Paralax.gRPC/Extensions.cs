@@ -1,15 +1,12 @@
+using System;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.DependencyInjection;
 using Paralax.gRPC.Builders;
-// using Paralax.gRPC.Protobuf;
-// using Paralax.gRPC.Protobuf.Utilities;
-// using Paralax.Health;
-using System.Diagnostics;
-using Paralax.gRPC.Utils;
 
 namespace Paralax.gRPC
 {
@@ -40,20 +37,31 @@ namespace Paralax.gRPC
 
                 configureOptions?.Invoke(new GrpcOptionsBuilder());
 
-                // builder.Services.AddCommonProtobufServices();
-                builder.Services.AddSingleton<UptimeService>();
-                builder.Services.AddSingleton<CpuUsageService>();
-                builder.Services.AddSingleton<MemoryUsageService>();
-
                 builder.Services.Configure<KestrelServerOptions>(kestrelOptions =>
                 {
+                    // Configure REST endpoint (HTTP/1.1)
                     kestrelOptions.ListenAnyIP(options.RestPort, listenOptions =>
                     {
                         listenOptions.Protocols = HttpProtocols.Http1;
                     });
+
+                    // Configure gRPC endpoint (HTTP/1.1 and HTTP/2)
                     kestrelOptions.ListenAnyIP(options.GrpcPort, listenOptions =>
                     {
-                        listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
+                        if (options.UseHttps)
+                        {
+                            if (string.IsNullOrEmpty(options.PemCertificatePath) || string.IsNullOrEmpty(options.KeyCertificatePath))
+                            {
+                                throw new InvalidOperationException("TLS is enabled, but certificate paths are not provided.");
+                            }
+
+                            // Load the certificate from PEM and Key files
+                            var certificate = LoadCertificate(options.PemCertificatePath, options.KeyCertificatePath);
+
+                            listenOptions.UseHttps(certificate);
+                        }
+
+                        listenOptions.Protocols = HttpProtocols.Http1AndHttp2; // Support both HTTP/1.1 and HTTP/2
                     });
                 });
 
@@ -72,7 +80,6 @@ namespace Paralax.gRPC
             return builder;
         }
 
-        // Extension for IApplicationBuilder to configure gRPC endpoints
         public static IApplicationBuilder UseParalaxGrpc(this IApplicationBuilder app, Action<IEndpointRouteBuilder>? configureEndpoints = null)
         {
             var grpcOptionsList = app.ApplicationServices.GetServices<GrpcOptions>();
@@ -98,5 +105,15 @@ namespace Paralax.gRPC
 
             return app;
         }
+
+        private static X509Certificate2 LoadCertificate(string pemPath, string keyPath)
+        {
+            var certPem = System.IO.File.ReadAllText(pemPath);
+            var keyPem = System.IO.File.ReadAllText(keyPath);
+
+            // Load the certificate with the private key from PEM and key files
+            return X509Certificate2.CreateFromPem(certPem, keyPem);
+        }
+
     }
 }

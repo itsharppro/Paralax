@@ -1,91 +1,69 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Routing;
-using Paralax.gRPC.Builders;
-// using Paralax.gRPC.Protobuf;
-// using Paralax.gRPC.Protobuf.Utilities;
-// using Paralax.Health;
-using System.Diagnostics;
-using Paralax.gRPC.Utils;
+using System;
+using System.Linq;
+using System.Net.Http;
 using Grpc.Net.Client;
-using Grpc.Core;
+using Microsoft.Extensions.DependencyInjection;
+using Paralax.gRPC.Builders;
 
 namespace Paralax.gRPC
 {
-    public static class GrpcClientExtensions
+    public static class ClientExtensions
     {
+        private const string GrpcClientOptionsSection = "GrpcClient";
+
         /// <summary>
-        /// Adds gRPC clients to the IServiceCollection based on the configuration in GrpcClientOptions.
+        /// Registers a gRPC client with the provided options from configuration.
         /// </summary>
-        /// <param name="services">The service collection to add the clients to.</param>
-        /// <param name="configuration">The configuration instance to bind options from.</param>
-        /// <param name="sectionName">The configuration section name (default is 'GrpcClientOptions').</param>
-        /// <returns>The IServiceCollection for chaining.</returns>
-        public static IServiceCollection AddGrpcClients(
-            this IServiceCollection services, 
-            IConfiguration configuration, 
-            string sectionName = "GrpcClientOptions")
+        /// <typeparam name="TClient">The gRPC client type to register.</typeparam>
+        /// <param name="builder">The Paralax builder for service registration.</param>
+        /// <param name="serviceName">The name of the service (key in the configuration) to look up.</param>
+        /// <param name="sectionName">The configuration section containing gRPC client options.</param>
+        /// <returns>The updated builder for chaining.</returns>
+        public static IParalaxBuilder AddParalaxGrpcClient<TClient>(this IParalaxBuilder builder, string serviceName, string sectionName = GrpcClientOptionsSection) where TClient : class
         {
-            // Load options from configuration
-            var grpcClientOptions = new GrpcClientOptions();
-            configuration.GetSection(sectionName).Bind(grpcClientOptions);
+            var clientOptions = builder.GetOptions<GrpcClientOptions>(sectionName);
 
-            foreach (var serviceEntry in grpcClientOptions.Services)
+            if (clientOptions == null)
+                throw new InvalidOperationException($"Configuration section '{sectionName}' is missing or invalid.");
+                
+            builder.Services.AddSingleton(clientOptions); 
+
+            if (!clientOptions.Services.TryGetValue(serviceName, out var serviceAddress) || string.IsNullOrWhiteSpace(serviceAddress))
+                throw new InvalidOperationException($"No configuration found for gRPC service '{serviceName}' in '{sectionName}'.");
+
+            if (!Uri.TryCreate(serviceAddress, UriKind.Absolute, out var serviceUri))
+                throw new ArgumentException($"The service address '{serviceAddress}' is not a valid URI.");
+
+            builder.Services.AddGrpcClient<TClient>(options =>
             {
-                services.AddTransient(serviceEntry.Key, serviceProvider =>
-                {
-                    // Create a gRPC channel for each service
-                    var channel = GrpcChannel.ForAddress(serviceEntry.Value, new GrpcChannelOptions
-                    {
-                        MaxReceiveMessageSize = grpcClientOptions.MaxReceiveMessageSize,
-                        MaxSendMessageSize = grpcClientOptions.MaxSendMessageSize,
-                        Credentials = ChannelCredentials.Insecure // Use secure credentials in production
-                    });
+                options.Address = serviceUri;
+            }).ConfigureChannel(channelOptions =>
+            {
+                channelOptions.MaxReceiveMessageSize = clientOptions.MaxReceiveMessageSize;
+                channelOptions.MaxSendMessageSize = clientOptions.MaxSendMessageSize;
+                channelOptions.HttpHandler = CreateHttpHandler(clientOptions);
+                channelOptions.DisposeHttpClient = true;
+            });
 
-                    // Instantiate the gRPC client with the channel
-                    return Activator.CreateInstance(serviceEntry.Key, channel);
-                });
-            }
-
-            return services;
+            return builder;
         }
 
         /// <summary>
-        /// Adds gRPC clients with programmatic configuration using GrpcClientOptionsBuilder.
+        /// Creates an HTTP handler with SSL and retry options.
         /// </summary>
-        /// <param name="services">The service collection to add the clients to.</param>
-        /// <param name="configure">A configuration action to set up the GrpcClientOptionsBuilder.</param>
-        /// <returns>The IServiceCollection for chaining.</returns>
-        public static IServiceCollection AddGrpcClients(
-            this IServiceCollection services, 
-            Action<GrpcClientOptionsBuilder> configure)
+        /// <param name="options">The gRPC client options.</param>
+        /// <returns>An HTTP handler.</returns>
+        private static HttpMessageHandler CreateHttpHandler(GrpcClientOptions options)
         {
-            // Build GrpcClientOptions using the builder
-            var builder = new GrpcClientOptionsBuilder();
-            configure(builder);
-            var grpcClientOptions = builder.Build();
-
-            foreach (var serviceEntry in grpcClientOptions.Services)
+            return new SocketsHttpHandler
             {
-                services.AddTransient(serviceEntry.Key, serviceProvider =>
+                EnableMultipleHttp2Connections = true,
+                SslOptions = new System.Net.Security.SslClientAuthenticationOptions
                 {
-                    // Create a gRPC channel for each service
-                    var channel = GrpcChannel.ForAddress(serviceEntry.Value, new GrpcChannelOptions
-                    {
-                        MaxReceiveMessageSize = grpcClientOptions.MaxReceiveMessageSize,
-                        MaxSendMessageSize = grpcClientOptions.MaxSendMessageSize,
-                        Credentials = ChannelCredentials.Insecure // Use secure credentials in production
-                    });
-
-                    // Instantiate the gRPC client with the channel
-                    return Activator.CreateInstance(serviceEntry.Key, channel);
-                });
-            }
-
-            return services;
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                        options.IgnoreCertificateErrors || sslPolicyErrors == System.Net.Security.SslPolicyErrors.None
+                }
+            };
         }
     }
 }
