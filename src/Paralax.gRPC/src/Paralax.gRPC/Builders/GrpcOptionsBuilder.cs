@@ -11,14 +11,12 @@ namespace Paralax.gRPC.Builders
             _options = new GrpcOptions();
         }
 
-        // Set the port for REST API (HTTP/1.1)
         public GrpcOptionsBuilder UseRestPort(int restPort)
         {
             _options.RestPort = restPort;
             return this;
         }
 
-        // Set the port for gRPC service (HTTP/2)
         public GrpcOptionsBuilder UseGrpcPort(int grpcPort)
         {
             _options.GrpcPort = grpcPort;
@@ -70,6 +68,25 @@ namespace Paralax.gRPC.Builders
         public GrpcOptionsBuilder SetEnvironment(string environment)
         {
             _options.Environment = environment;
+            return this;
+        }
+
+        // New TLS Settings
+        public GrpcOptionsBuilder UseHttps(bool enable)
+        {
+            _options.UseHttps = enable;
+            return this;
+        }
+
+        public GrpcOptionsBuilder SetPemCertificatePath(string pemPath)
+        {
+            _options.PemCertificatePath = pemPath;
+            return this;
+        }
+
+        public GrpcOptionsBuilder SetKeyCertificatePath(string keyPath)
+        {
+            _options.KeyCertificatePath = keyPath;
             return this;
         }
 

@@ -12,5 +12,9 @@ namespace Paralax.gRPC
         public string ServiceName { get; set; } = "DefaultService";
         public string ServiceVersion { get; set; } = "1.0.0";
         public string Environment { get; set; } = "Production";
+
+        public bool UseHttps { get; set; } = false; 
+        public string PemCertificatePath { get; set; } = string.Empty; 
+        public string KeyCertificatePath { get; set; } = string.Empty; 
     }
 }
