@@ -1,57 +1,88 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using OpenTelemetry;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Microsoft.AspNetCore.Builder;
-using OpenTelemetry.Instrumentation.GrpcNetClient;
 
+using Paralax.OpenTelemetry.Builders;
 
 namespace Paralax.OpenTelemetry;
 
 public static class OpenTelemetryExtensions
 {
-     public static IHostApplicationBuilder ConfigureOpenTelemetry(this IHostApplicationBuilder builder)
+    private const string OpenTelemetryOptionsSection = "OpenTelemetry";
+
+    public static IHostApplicationBuilder ConfigureOpenTelemetry(this IHostApplicationBuilder builder)
     {
+        // Load configuration from appsettings.json or defaults
+        var options = builder.GetOptions<OpenTelemetryOptions>(OpenTelemetryOptionsSection) ?? new OpenTelemetryOptions();
+
         builder.Logging.AddOpenTelemetry(logging =>
         {
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
         });
 
-        builder.Services.AddOpenTelemetry()
-            .WithMetrics(metrics =>
-            {
-                metrics.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
-            })
-            .WithTracing(tracing =>
-            {
-                tracing.AddSource(builder.Environment.ApplicationName)
-                    .AddAspNetCoreInstrumentation(tracing =>
-                        // Don't trace requests to the health endpoint to avoid filling the dashboard with noise
-                        tracing.Filter = httpContext =>
-                            !(httpContext.Request.Path.StartsWithSegments("/health")
-                              || httpContext.Request.Path.StartsWithSegments("/alive"))
-                    )
-                    .AddGrpcClientInstrumentation()
-                    .AddHttpClientInstrumentation();
-            });
+        if (options.EnableMetrics || options.EnableTracing || options.EnableLogging)
+        {
+            var openTelemetryBuilder = builder.Services.AddOpenTelemetry();
 
-        builder.AddOpenTelemetryExporters();
+            if (options.EnableMetrics)
+            {
+                openTelemetryBuilder.WithMetrics(metrics =>
+                {
+                    metrics.AddAspNetCoreInstrumentation()
+                           .AddHttpClientInstrumentation()
+                           .AddRuntimeInstrumentation();
+
+                    if (!string.IsNullOrWhiteSpace(options.PrometheusEndpoint))
+                    {
+                        // Metrics provides by ASP.NET Core in .NET 8
+                         metrics.AddMeter("Microsoft.AspNetCore.Hosting")
+                                .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+                                .AddPrometheusExporter();
+                    }
+                });
+            }
+
+            if (options.EnableTracing)
+            {
+                openTelemetryBuilder.WithTracing(tracing =>
+                {
+                    tracing.AddSource(options.ServiceName ?? builder.Environment.ApplicationName)
+                           .AddAspNetCoreInstrumentation(tracingOptions =>
+                           {
+                               tracingOptions.Filter = httpContext =>
+                                   !(httpContext.Request.Path.StartsWithSegments("/health")
+                                   || httpContext.Request.Path.StartsWithSegments("/alive"));
+                           })
+                           .AddGrpcClientInstrumentation()
+                           .AddHttpClientInstrumentation();
+
+                    if (!string.IsNullOrWhiteSpace(options.JaegerEndpoint))
+                    {
+                        tracing.AddJaegerExporter(jaegerOptions =>
+                        {
+                            jaegerOptions.AgentHost = options.JaegerEndpoint;
+                        });
+                    }
+                });
+            }
+        }
+
+        builder.AddOpenTelemetryExporters(options);
 
         return builder;
     }
 
-    private static IHostApplicationBuilder AddOpenTelemetryExporters(this IHostApplicationBuilder builder)
+    private static IHostApplicationBuilder AddOpenTelemetryExporters(this IHostApplicationBuilder builder, OpenTelemetryOptions options)
     {
-        var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
-
-        if (useOtlpExporter)
+        if (!string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
         {
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
         }
@@ -62,22 +93,17 @@ public static class OpenTelemetryExtensions
     public static IHostApplicationBuilder AddDefaultHealthChecks(this IHostApplicationBuilder builder)
     {
         builder.Services.AddHealthChecks()
-            // Add a default liveness check to ensure app is responsive
-            .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+            .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" });
 
         return builder;
     }
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        // Adding health checks endpoints to applications in non-development environments has security implications.
-        // See https://aka.ms/dotnet/aspire/healthchecks for details before enabling these endpoints in non-development environments.
         if (app.Environment.IsDevelopment())
         {
-            // All health checks must pass for app to be considered ready to accept traffic after starting
             app.MapHealthChecks("/health");
 
-            // Only health checks tagged with the "live" tag must pass for app to be considered alive
             app.MapHealthChecks("/alive", new HealthCheckOptions
             {
                 Predicate = r => r.Tags.Contains("live")
@@ -85,5 +111,15 @@ public static class OpenTelemetryExtensions
         }
 
         return app;
+    }
+
+    public static T? GetOptions<T>(this IHostApplicationBuilder builder, string sectionName) where T : class, new()
+    {
+        var section = builder.Configuration.GetSection(sectionName);
+        if (!section.Exists()) return null;
+
+        var options = new T();
+        section.Bind(options);
+        return options;
     }
 }
