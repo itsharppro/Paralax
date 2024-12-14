@@ -1,15 +1,42 @@
-using Paralax.Net.Http;
-using Paralax.Grpc;
+// using Paralax.Net.Http;
+// using Paralax.gRPC;
 using Paralax.Diagnostics.HealthChecks;
 using Paralax.OpenTelemetry;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+// using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Grpc.Net.Client;
+using Microsoft.Extensions.Hosting;
+using Grpc.Health.V1;
+
+
 
 namespace Paralax.ServiceDefaults;
 
+using AddHealthChecks = Paralax.Diagnostics.HealthChecks;
+
 public static class ServiceReferenceExtensions
 {
+
+    public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
+    {
+        builder.ConfigureOpenTelemetry();
+
+        builder.AddDefaultHealthChecks();
+
+        builder.Services.AddServiceDiscovery();
+
+        builder.Services.ConfigureHttpClientDefaults(http =>
+        {
+            // Turn on resilience by default
+            http.AddStandardResilienceHandler();
+
+            // Turn on service discovery by default
+            http.AddServiceDiscovery();
+        });
+
+        return builder;
+    }
+
     public static IServiceCollection AddHttpServiceReference<TClient>(this IServiceCollection services, AspireOptions options)
         where TClient : class
     {
@@ -23,7 +50,9 @@ public static class ServiceReferenceExtensions
 
         if (!string.IsNullOrEmpty(options.HealthCheckEndpoint))
         {
-            services.AddHealthChecks().AddUrlGroup(
+             Microsoft.Extensions.DependencyInjection.HealthCheckServiceCollectionExtensions
+                .AddHealthChecks(services)
+                .AddUrlGroup(
                 new Uri(new Uri(options.BaseAddress), options.HealthCheckEndpoint),
                 $"{typeof(TClient).Name}-health");
         }
@@ -31,55 +60,59 @@ public static class ServiceReferenceExtensions
         return services;
     }
 
-    public static IServiceCollection AddGrpcServiceReference<TClient>(this IServiceCollection services, AspireOptions options)
+   public static IHttpClientBuilder AddGrpcServiceReference<TClient>(this IServiceCollection services, string address)
         where TClient : class
     {
-        if (!Uri.IsWellFormedUriString(options.BaseAddress, UriKind.Absolute))
-            throw new ArgumentException("Base address must be a valid absolute URI.", nameof(options.BaseAddress));
+        ArgumentNullException.ThrowIfNull(services);
 
-        services.AddGrpcClient<TClient>(client =>
+        if (!Uri.IsWellFormedUriString(address, UriKind.Absolute))
         {
-            client.Address = new Uri(options.BaseAddress);
-        });
-
-        if (!string.IsNullOrEmpty(options.HealthCheckEndpoint))
-        {
-            services.AddGrpcHealthCheck<TClient>(new Uri(options.BaseAddress), $"{typeof(TClient).Name}-health");
+            throw new ArgumentException("Address must be a valid absolute URI.", nameof(address));
         }
 
-        return services;
+        var builder = services.AddGrpcClient<TClient>(o => o.Address = new(address));
+
+        return builder;
     }
 
-    public static IServiceCollection AddGrpcHealthCheck<TClient>(this IServiceCollection services, Uri baseAddress, string healthCheckName)
-        where TClient : Grpc.Core.ClientBase<TClient>
+
+     public static IHttpClientBuilder AddGrpcServiceReference<TClient>(this IServiceCollection services, string address, string? healthCheckName = null, HealthStatus failureStatus = default)
+        where TClient : class
     {
-        services.AddHealthChecks().AddCheck(healthCheckName, new GrpcHealthCheck<TClient>(baseAddress));
-        return services;
+        ArgumentNullException.ThrowIfNull(services);
+
+        if (!Uri.IsWellFormedUriString(address, UriKind.Absolute))
+        {
+            throw new ArgumentException("Address must be a valid absolute URI.", nameof(address));
+        }
+
+        var uri = new Uri(address);
+        var builder = services.AddGrpcClient<TClient>(o => o.Address = uri);
+
+        AddGrpcHealthChecks(services, uri, healthCheckName ?? $"{typeof(TClient).Name}-health", failureStatus);
+
+        return builder;
     }
-}
 
-public class GrpcHealthCheck<TClient> : IHealthCheck where TClient : Grpc.Core.ClientBase<TClient>
-{
-    private readonly Uri _serviceUri;
-
-    public GrpcHealthCheck(Uri serviceUri)
+    private static void AddGrpcHealthChecks(IServiceCollection services, Uri uri, string healthCheckName, HealthStatus failureStatus = default)
     {
-        _serviceUri = serviceUri;
+        services.AddGrpcClient<Health.HealthClient>(o => o.Address = uri);
+        Paralax.Diagnostics.HealthChecks.HealthChecksServiceCollectionExtensions
+            .AddHealthChecks(services)
+            .AddCheck<GrpcServiceHealthCheck>(healthCheckName, failureStatus);
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    private sealed class GrpcServiceHealthCheck(Health.HealthClient healthClient) : IHealthCheck
     {
-        using var channel = GrpcChannel.ForAddress(_serviceUri);
-        var client = Activator.CreateInstance(typeof(TClient), channel) as TClient;
-        
-        return HealthCheckResult.Healthy();
-    }
-}
+        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+        {
+            var response = await healthClient.CheckAsync(new(), cancellationToken: cancellationToken);
 
-public static class OpenTelemetryExtensions
-{
-    public static IServiceCollection ConfigureOpenTelemetry(this IServiceCollection services, IConfiguration configuration)
-    {
-        return services;
+            return response.Status switch
+            {
+                HealthCheckResponse.Types.ServingStatus.Serving => HealthCheckResult.Healthy(),
+                _ => HealthCheckResult.Unhealthy()
+            };
+        }
     }
 }

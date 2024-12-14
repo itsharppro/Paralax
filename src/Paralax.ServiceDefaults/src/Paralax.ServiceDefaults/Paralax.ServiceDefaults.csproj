@@ -20,4 +20,9 @@
     <PackageReference Include="Paralax" Version="1.0.420" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../../../Paralax.OpenTelemetry/src/Paralax.OpenTelemetry/Paralax.OpenTelemetry.csproj" />
+    <ProjectReference Include="../../../Paralax.Diagnostics.HealthChecks/src/Paralax.Diagnostics.HealthChecks/Paralax.Diagnostics.HealthChecks.csproj" />
+  </ItemGroup>
+
 </Project>
