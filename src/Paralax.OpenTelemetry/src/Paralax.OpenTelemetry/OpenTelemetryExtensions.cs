@@ -118,6 +118,7 @@ public static class OpenTelemetryExtensions
         if (!section.Exists()) return null;
 
         var options = new T();
+        
         section.Bind(options);
         return options;
     }
