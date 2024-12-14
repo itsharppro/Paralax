@@ -19,7 +19,6 @@ public static class OpenTelemetryExtensions
 
     public static IHostApplicationBuilder ConfigureOpenTelemetry(this IHostApplicationBuilder builder)
     {
-        // Load configuration from appsettings.json or defaults
         var options = builder.GetOptions<OpenTelemetryOptions>(OpenTelemetryOptionsSection) ?? new OpenTelemetryOptions();
 
         builder.Logging.AddOpenTelemetry(logging =>
