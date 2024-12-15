@@ -37,6 +37,27 @@ public static class ServiceReferenceExtensions
         return builder;
     }
 
+    public static IParalaxBuilder AddServiceDefaults(this IParalaxBuilder builder)
+    {
+        // Assuming IParalaxBuilder mimics the functionalities similar to IHostApplicationBuilder
+        // builder.ConfigureOpenTelemetry();
+        // builder.AddDefaultHealthChecks();
+
+        builder.Services.AddServiceDiscovery();
+
+        builder.Services.ConfigureHttpClientDefaults(http =>
+        {
+            http.AddStandardResilienceHandler();
+            http.AddServiceDiscovery();
+        });
+
+
+        return builder;
+    }
+
+
+
+
     public static IServiceCollection AddHttpServiceReference<TClient>(this IServiceCollection services, AspireOptions options)
         where TClient : class
     {
