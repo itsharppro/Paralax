@@ -39,7 +39,6 @@ public static class ServiceReferenceExtensions
 
     public static IParalaxBuilder AddServiceDefaults(this IParalaxBuilder builder)
     {
-        // Assuming IParalaxBuilder mimics the functionalities similar to IHostApplicationBuilder
         // builder.ConfigureOpenTelemetry();
         // builder.AddDefaultHealthChecks();
 
