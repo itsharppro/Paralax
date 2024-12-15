@@ -123,6 +123,7 @@ public static class OpenTelemetryExtensions
         return options;
     }
 
+
     public static IParalaxBuilder ConfigureOpenTelemetry(this IParalaxBuilder builder)
     {
         var options = builder.Services.BuildServiceProvider()
