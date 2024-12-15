@@ -118,8 +118,93 @@ public static class OpenTelemetryExtensions
         if (!section.Exists()) return null;
 
         var options = new T();
-        
+
         section.Bind(options);
         return options;
+    }
+
+    public static IParalaxBuilder ConfigureOpenTelemetry(this IParalaxBuilder builder)
+    {
+        var options = builder.Services.BuildServiceProvider()
+            .GetRequiredService<IConfiguration>()
+            .GetSection(OpenTelemetryOptionsSection)
+            .Get<OpenTelemetryOptions>() ?? new OpenTelemetryOptions();
+
+        builder.Services.AddLogging(logging =>
+        {
+            logging.AddOpenTelemetry(loggingBuilder =>
+            {
+                loggingBuilder.IncludeFormattedMessage = true;
+                loggingBuilder.IncludeScopes = true;
+            });
+        });
+
+        if (options.EnableMetrics || options.EnableTracing || options.EnableLogging)
+        {
+            var openTelemetryBuilder = builder.Services.AddOpenTelemetry();
+
+            if (options.EnableMetrics)
+            {
+                openTelemetryBuilder.WithMetrics(metrics =>
+                {
+                    metrics.AddAspNetCoreInstrumentation()
+                           .AddHttpClientInstrumentation()
+                           .AddRuntimeInstrumentation();
+
+                    if (!string.IsNullOrWhiteSpace(options.PrometheusEndpoint))
+                    {
+                        metrics.AddMeter("Microsoft.AspNetCore.Hosting")
+                               .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+                               .AddPrometheusExporter();
+                    }
+                });
+            }
+
+            if (options.EnableTracing)
+            {
+                openTelemetryBuilder.WithTracing(tracing =>
+                {
+                    tracing.AddSource(options.ServiceName ?? builder.Services.BuildServiceProvider().GetRequiredService<IHostEnvironment>().ApplicationName)
+                           .AddAspNetCoreInstrumentation(tracingOptions =>
+                           {
+                               tracingOptions.Filter = httpContext =>
+                                   !(httpContext.Request.Path.StartsWithSegments("/health")
+                                   || httpContext.Request.Path.StartsWithSegments("/alive"));
+                           })
+                           .AddGrpcClientInstrumentation()
+                           .AddHttpClientInstrumentation();
+
+                    if (!string.IsNullOrWhiteSpace(options.JaegerEndpoint))
+                    {
+                        tracing.AddJaegerExporter(jaegerOptions =>
+                        {
+                            jaegerOptions.AgentHost = options.JaegerEndpoint;
+                        });
+                    }
+                });
+            }
+        }
+
+        builder.AddOpenTelemetryExporters(options);
+
+        return builder;
+    }
+
+    public static IParalaxBuilder AddDefaultHealthChecks(this IParalaxBuilder builder)
+    {
+        builder.Services.AddHealthChecks()
+            .AddCheck("self", () => HealthCheckResult.Healthy(), new[] { "live" });
+
+        return builder;
+    }
+
+    private static IParalaxBuilder AddOpenTelemetryExporters(this IParalaxBuilder builder, OpenTelemetryOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(builder.Services.BuildServiceProvider().GetRequiredService<IConfiguration>()?["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+        {
+            builder.Services.AddOpenTelemetry().UseOtlpExporter();
+        }
+
+        return builder;
     }
 }
