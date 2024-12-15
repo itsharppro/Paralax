@@ -92,7 +92,6 @@ declare -a packages=(
     "Paralax.OpenTelemetry"
     "Paralax.Diagnostics.HealthChecks"
     "Paralax.ServiceDefaults"
-
 )
 
 # Iterate through the defined order of packages
