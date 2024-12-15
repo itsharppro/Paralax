@@ -39,8 +39,8 @@ public static class ServiceReferenceExtensions
 
     public static IParalaxBuilder AddServiceDefaults(this IParalaxBuilder builder)
     {
-        // builder.ConfigureOpenTelemetry();
-        // builder.AddDefaultHealthChecks();
+        builder.ConfigureOpenTelemetry();
+        builder.AddDefaultHealthChecks();
 
         builder.Services.AddServiceDiscovery();
 
