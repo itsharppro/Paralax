@@ -88,6 +88,11 @@ declare -a packages=(
     "Paralax.WebApi.Security"
     "Paralax.WebApi.Swagger"
     "Paralax.CQRS.WebApi"
+
+    "Paralax.OpenTelemetry"
+    "Paralax.Diagnostics.HealthChecks"
+    "Paralax.ServiceDefaults"
+
 )
 
 # Iterate through the defined order of packages
