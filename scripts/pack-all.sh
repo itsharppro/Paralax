@@ -71,6 +71,7 @@ declare -a packages=(
     
     "Paralax.Persistence.MongoDB"
     "Paralax.Persistence.Redis"
+    "Paralax.Persistence.Postgres"
     "Paralax.LoadBalancing.Fabio"
 
     "Paralax.MessageBrokers.CQRS"
