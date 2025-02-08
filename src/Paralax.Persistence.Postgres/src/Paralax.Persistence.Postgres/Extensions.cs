@@ -44,7 +44,9 @@ namespace Paralax.Persistence.Postgres
             });
 
             builder.Services.AddScoped<PostgresDbContextFactory>();
-            builder.Services.AddTransient<IPostgresDbInitializer, PostgresDbInitializer>();
+            builder.Services.AddTransient<PostgresDbInitializer>();
+            builder.Services.AddTransient<IPostgresDbInitializer>(provider => provider.GetRequiredService<PostgresDbInitializer>());
+
 
             builder.AddInitializer<PostgresDbInitializer>();
 
