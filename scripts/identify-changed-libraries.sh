@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Check if the commit message contains "build-test-force"
 if git log -1 --pretty=%B | grep -q "\[build-test-force\]"; then
   echo "[build-test-force] flag detected, processing all libraries."
   FORCE_BUILD_TEST=true
