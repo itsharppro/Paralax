@@ -15,7 +15,17 @@ namespace Paralax.Persistence.Postgres.Initializers
 
         public async Task InitializeAsync()
         {
-            _context.Database.Migrate();
+             var availableMigrations = _context.Database.GetMigrations();
+            if (!availableMigrations.Any())
+            {
+                // No migrations are defined – create the schema directly.
+                await _context.Database.EnsureCreatedAsync();
+            }
+            else
+            {
+                // Migrations exist – apply any pending migrations.
+                await _context.Database.MigrateAsync();
+            }
         }
     }
 }

@@ -44,8 +44,37 @@ namespace Paralax.Persistence.Postgres
             });
 
             builder.Services.AddScoped<PostgresDbContextFactory>();
-            builder.Services.AddTransient<IPostgresDbInitializer, PostgresDbInitializer>();
+            builder.Services.AddTransient<PostgresDbInitializer>();
+            builder.Services.AddTransient<IPostgresDbInitializer>(provider => provider.GetRequiredService<PostgresDbInitializer>());
 
+
+            builder.AddInitializer<PostgresDbInitializer>();
+
+            return builder;
+        }
+
+        public static IParalaxBuilder AddPostgres<TContext>(this IParalaxBuilder builder, PostgresDbOptions options)
+            where TContext : PostgresDbContext
+        {
+            if (!builder.TryRegister(RegistryName))
+            {
+                return builder;
+            }
+
+            builder.Services.AddSingleton(options);
+            // Here we register TContext, so the DI container builds DbContextOptions<TContext>.
+            builder.Services.AddDbContext<TContext>(opt =>
+            {
+                opt.UseNpgsql(options.ConnectionString);
+                if (options.EnableLogging)
+                {
+                    opt.EnableSensitiveDataLogging();
+                }
+            });
+
+            builder.Services.AddScoped<PostgresDbContextFactory>();
+            builder.Services.AddTransient<PostgresDbInitializer>();
+            builder.Services.AddTransient<IPostgresDbInitializer>(provider => provider.GetRequiredService<PostgresDbInitializer>());
             builder.AddInitializer<PostgresDbInitializer>();
 
             return builder;
