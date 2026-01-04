@@ -180,7 +180,7 @@ namespace Paralax.HTTP
             var stream = await response.Content.ReadAsStreamAsync();
             serializer ??= _serializer;
             var result = await serializer.DeserializeAsync<T>(stream);
-             Console.WriteLine($"Deserialized Result: {result}");
+            //  Console.WriteLine($"Deserialized Result: {result}");
 
             return new HttpResult<T>(result, response);
         }
@@ -219,7 +219,7 @@ namespace Paralax.HTTP
             var stream = await response.Content.ReadAsStreamAsync();
             
             var result = await DeserializeJsonFromStream<T>(stream, serializer);
-            Console.WriteLine($"Deserialized Result: {result}");
+            // Console.WriteLine($"Deserialized Result: {result}");
             
             return new HttpResult<T>(result, response);
         }
