@@ -329,3 +329,16 @@ ASALocalRun/
 .mfractor/
 
 logs/
+
+
+# local secrets
+.env
+.env.*.local
+
+# certificates / keys (never commit)
+*.pfx
+*.p12
+*.pem
+*.key
+certificate.*
+privatekey.*

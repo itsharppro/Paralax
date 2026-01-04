@@ -4,36 +4,60 @@ set -euo pipefail
 base_dir="src"
 divider="----------------------------------------"
 
-# Usage:
-#   ./scripts/pack-all.sh                 # package changed libs only (auto-detect)
-#   ./scripts/pack-all.sh --force         # package ALL libs
-#   ./scripts/pack-all.sh --only Paralax.WebApi Paralax.HTTP
-#   ./scripts/pack-all.sh --only "Paralax.WebApi,Paralax.HTTP"
-#   ./scripts/pack-all.sh --force --only Paralax.WebApi   # --only wins (packages limited)
-#
-# Notes:
-# - Uses per-package script: src/<Package>/scripts/build-and-pack.sh
-# - Detects changed files both in GitHub Actions and locally.
-
 FORCE_PACK_ALL=false
 ONLY_PACKAGES=()
+LIST_ONLY=false
+PACKAGE_VERSION=""
+
+# Load .env from repo root if present (exports variables)
+load_env() {
+  local script_dir repo_root
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  repo_root="$(cd "$script_dir/.." && pwd)"
+
+  if [[ -f "$repo_root/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$repo_root/.env"
+    set +a
+  fi
+}
+
+load_env
 
 print_usage() {
   cat <<EOF
 Usage:
-  $0 [--force] [--only <pkg...|comma-separated>] [--list]
+  $0 [--version <x.y.z>] [--force] [--only <pkg...|comma-separated>] [--list]
 
 Options:
-  --force            Package ALL libraries (ignores change detection).
-  --only             Package ONLY selected packages (space-separated or comma-separated).
-  --list             Print the known package order and exit.
-  -h, --help         Show this help.
+  --version <x.y.z>    Package version to use (required locally; optional in CI).
+  --force              Package ALL libraries (ignores change detection).
+  --only               Package ONLY selected packages (space-separated or comma-separated).
+  --list               Print the known package order and exit.
+  -h, --help           Show this help.
+
+Notes:
+  - Loads env from .env at repo root if present.
+  - Passes version to src/<Package>/scripts/build-and-pack.sh
+
+Examples:
+  $0 --version 1.2.3
+  $0 --version 1.2.3 --force
+  $0 --version 1.2.3 --only Paralax.WebApi Paralax.HTTP
+  $0 --version 1.2.3 --only "Paralax.WebApi,Paralax.HTTP"
 EOF
 }
 
 # Parse args
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --version)
+      shift
+      [[ $# -eq 0 ]] && { echo "Error: --version requires a value."; exit 2; }
+      PACKAGE_VERSION="$1"
+      shift
+      ;;
     --force)
       FORCE_PACK_ALL=true
       shift
@@ -44,7 +68,6 @@ while [[ $# -gt 0 ]]; do
         echo "Error: --only requires at least one package name."
         exit 2
       fi
-      # Accept comma-separated or multiple args until next flag
       if [[ "$1" == *","* ]]; then
         IFS=',' read -r -a ONLY_PACKAGES <<< "$1"
         shift
@@ -71,7 +94,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Define the processing order
+# Package order
 declare -a packages=(
   "Paralax"
   "Paralax.Auth"
@@ -119,14 +142,13 @@ declare -a packages=(
   "Paralax.ServiceDefaults"
 )
 
-# --list
-if [[ "${LIST_ONLY:-false}" == "true" ]]; then
+if [[ "$LIST_ONLY" == "true" ]]; then
   printf "%s\n" "${packages[@]}"
   exit 0
 fi
 
-# Commit-message force flag (still supported)
-COMMIT_MESSAGE="$(git log -1 --pretty=%B)"
+# Commit-message force flag
+COMMIT_MESSAGE="$(git log -1 --pretty=%B 2>/dev/null || true)"
 if [[ "$COMMIT_MESSAGE" == *"[pack-all-force]"* ]]; then
   echo "$divider"
   echo "Commit message contains [pack-all-force]. Forcing packaging of all libraries."
@@ -134,9 +156,21 @@ if [[ "$COMMIT_MESSAGE" == *"[pack-all-force]"* ]]; then
   FORCE_PACK_ALL=true
 fi
 
-# If --only is set, it should override everything else (including --force)
+# Determine version
+if [[ -z "$PACKAGE_VERSION" ]]; then
+  if [[ -n "${GITHUB_RUN_NUMBER:-}" ]]; then
+    PACKAGE_VERSION="1.0.${GITHUB_RUN_NUMBER}"
+    echo "$divider"
+    echo "No --version provided. Using CI default: $PACKAGE_VERSION"
+    echo "$divider"
+  else
+    echo "Error: --version is required when running locally."
+    echo "Example: $0 --version 1.2.3"
+    exit 2
+  fi
+fi
+
 normalize_pkg() {
-  # trim spaces
   local s="$1"
   s="${s#"${s%%[![:space:]]*}"}"
   s="${s%"${s##*[![:space:]]}"}"
@@ -144,7 +178,6 @@ normalize_pkg() {
 }
 
 if [[ ${#ONLY_PACKAGES[@]} -gt 0 ]]; then
-  # Normalize + validate against known list
   declare -A known=()
   for p in "${packages[@]}"; do known["$p"]=1; done
 
@@ -162,16 +195,16 @@ if [[ ${#ONLY_PACKAGES[@]} -gt 0 ]]; then
 
   ONLY_PACKAGES=("${filtered[@]}")
   echo "$divider"
-  echo "Mode: ONLY selected packages:"
+  echo "Mode: ONLY selected packages (version: $PACKAGE_VERSION)"
   printf " - %s\n" "${ONLY_PACKAGES[@]}"
   echo "$divider"
 else
   echo "$divider"
-  echo "Mode: auto-detect changed packages (use --force to override)."
+  echo "Mode: auto-detect changed packages (version: $PACKAGE_VERSION) (use --force to override)"
   echo "$divider"
 fi
 
-# Detect changed files (works in GitHub Actions + locally)
+# Detect changed files
 CHANGED_FILES=""
 echo "$divider"
 echo "Detecting changed files..."
@@ -179,16 +212,12 @@ echo "$divider"
 
 if [[ -n "${GITHUB_SHA:-}" && -n "${GITHUB_EVENT_BEFORE:-}" ]]; then
   if [[ "$GITHUB_EVENT_BEFORE" == "0000000000000000000000000000000000000000" ]]; then
-    echo "GITHUB_EVENT_BEFORE is empty (first push). Using all files."
+    echo "GITHUB_EVENT_BEFORE empty (first push). Using all files."
     CHANGED_FILES="$(git ls-tree -r --name-only HEAD)"
   else
     echo "Using GitHub Actions diff: $GITHUB_EVENT_BEFORE..$GITHUB_SHA"
     CHANGED_FILES="$(git diff --name-only "$GITHUB_EVENT_BEFORE" "$GITHUB_SHA" || true)"
   fi
-elif [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" && "${GITHUB_BASE_REF:-}" == "main" ]]; then
-  # optional PR logic if you keep it
-  echo "Pull request detected targeting main. Comparing origin/main..origin/dev"
-  CHANGED_FILES="$(git diff --name-only origin/main origin/dev || true)"
 else
   if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
     echo "Local run. Using diff: HEAD~1..HEAD"
@@ -199,20 +228,15 @@ else
   fi
 fi
 
-# Function to check if the directory contains changes
 directory_contains_changes() {
   local dir="$1"
 
-  # If --only is set, ignore change detection here (caller decides)
   if [[ ${#ONLY_PACKAGES[@]} -gt 0 ]]; then
     return 1
   fi
-
   if [[ "$FORCE_PACK_ALL" == "true" ]]; then
     return 0
   fi
-
-  # If CHANGED_FILES is empty, assume nothing changed
   [[ -z "$CHANGED_FILES" ]] && return 1
 
   while IFS= read -r file; do
@@ -225,7 +249,6 @@ directory_contains_changes() {
   return 1
 }
 
-# Decide if we should run a package
 should_process_package() {
   local pkg="$1"
   local dir="$base_dir/$pkg"
@@ -241,10 +264,9 @@ should_process_package() {
 }
 
 echo "$divider"
-echo "Starting the process of packaging libraries"
+echo "Starting packaging libraries (version: $PACKAGE_VERSION)"
 echo "$divider"
 
-# Iterate through packages
 for package in "${packages[@]}"; do
   dir="$base_dir/$package"
   script_path="$dir/scripts/build-and-pack.sh"
@@ -258,23 +280,20 @@ for package in "${packages[@]}"; do
     echo "$divider"
 
     if [[ -f "$script_path" ]]; then
-      echo "Found packaging script for: $package"
       chmod +x "$script_path"
-
-      echo "Executing packaging script for: $package"
-      "$script_path"
-
+      echo "Executing: $script_path $PACKAGE_VERSION"
+      "$script_path" "$PACKAGE_VERSION"
       echo "$divider"
-      echo "Successfully packed and published: $package"
+      echo "Done: $package"
       echo "$divider"
     else
       echo "$divider"
-      echo "Warning: No packaging script found for $package at $script_path"
+      echo "Warning: No script for $package at $script_path"
       echo "$divider"
     fi
   else
     echo "$divider"
-    echo "Skipping package: $package"
+    echo "Skipping: $package"
     if [[ ${#ONLY_PACKAGES[@]} -gt 0 ]]; then
       echo "(not in --only list)"
     else
