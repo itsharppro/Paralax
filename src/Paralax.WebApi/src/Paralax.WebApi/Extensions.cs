@@ -286,19 +286,16 @@ namespace Paralax.WebApi
         }
 
         public static async Task WriteJsonAsync<T>(this HttpResponse response, T value)
-{
-    response.ContentType = JsonContentType;
-    var serializer = response.HttpContext.RequestServices.GetRequiredService<IJsonSerializer>();
+        {
+            response.ContentType = JsonContentType;
+            var serializer = response.HttpContext.RequestServices.GetRequiredService<IJsonSerializer>();
 
-    // Serialize the object to a string
-    var serializedJson = serializer.Serialize(value);
+            var serializedJson = serializer.Serialize(value);
 
-    // Log the serialized JSON to the console
-    Console.WriteLine($"Serialized JSON Response: {serializedJson}");
+            // Console.WriteLine($"Serialized JSON Response: {serializedJson}");
 
-    // Write the serialized JSON to the response body
-    await response.WriteAsync(serializedJson);
-}
+            await response.WriteAsync(serializedJson);
+        }
 
 
         public static T Bind<T>(this T model, Expression<Func<T, object>> expression, object value)
