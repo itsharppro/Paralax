@@ -8,6 +8,23 @@ on:
     branches:
       - '**'
 
+  # ✅ Manual run from GitHub UI
+  workflow_dispatch:
+    inputs:
+      publish_mode:
+        description: "Publish mode: auto | only | force"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - only
+          - force
+      packages:
+        description: "Comma-separated packages for 'only' mode (ex: Paralax.WebApi,Paralax.HTTP)"
+        required: false
+        default: ""
+
 jobs:
   build_test:
     runs-on: ubuntu-latest
@@ -16,7 +33,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        fetch-depth: 100  
+        fetch-depth: 0  
 
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
@@ -30,7 +47,7 @@ jobs:
 
     - name: Build and test libraries
       env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} 
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
         chmod +x ./scripts/build-and-test.sh
         ./scripts/build-and-test.sh
@@ -42,13 +59,15 @@ jobs:
         path: src/*/TestResults/
 
   publish:
-    if: github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
     needs: build_test
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
@@ -60,7 +79,7 @@ jobs:
         echo "${{ secrets.CERTIFICATE_BASE64 }}" | base64 --decode > certificate.cer
         echo "${{ secrets.PRIVATE_KEY_BASE64 }}" | base64 --decode > privatekey.pem
 
-    - name: Run publish script for all packages
+    - name: Run publish script
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         CERTIFICATE_PATH: certificate.cer
@@ -68,4 +87,22 @@ jobs:
         CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
       run: |
         chmod +x ./scripts/pack-all.sh
-        ./scripts/pack-all.sh
+
+        # Default on push to dev: auto mode (changed packages)
+        MODE="${{ github.event_name == 'workflow_dispatch' && inputs.publish_mode || 'auto' }}"
+        PKGS="${{ github.event_name == 'workflow_dispatch' && inputs.packages || '' }}"
+
+        echo "Publish MODE: $MODE"
+        echo "Packages: $PKGS"
+
+        if [ "$MODE" = "force" ]; then
+          ./scripts/pack-all.sh --force
+        elif [ "$MODE" = "only" ]; then
+          if [ -z "$PKGS" ]; then
+            echo "Error: publish_mode=only requires 'packages' input."
+            exit 2
+          fi
+          ./scripts/pack-all.sh --only "$PKGS"
+        else
+          ./scripts/pack-all.sh
+        fi

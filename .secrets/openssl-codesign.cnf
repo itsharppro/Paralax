@@ -1,0 +1,20 @@
+[ req ]
+default_bits       = 4096
+distinguished_name = dn
+x509_extensions    = v3
+prompt             = no
+
+[ dn ]
+C  = PL
+ST = Mazowieckie
+L  = Warsaw
+O  = Paralax
+OU = NuGet Signing
+CN = Paralax NuGet Signing
+
+[ v3 ]
+keyUsage = critical, digitalSignature
+extendedKeyUsage = codeSigning
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:false
